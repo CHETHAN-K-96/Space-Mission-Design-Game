@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Link from "next/link";
 import { useGame } from "../context/GameContext";
 import {
   Rocket,
@@ -26,7 +27,7 @@ export function TelemetryHud() {
   } = useGame();
 
   const budgetPct = Math.min(
-    Math.max((telemetry.budget_xp / activeMission.initialBudget) * 100, 0),
+    Math.max((telemetry.budget_m / activeMission.initialBudget) * 100, 0),
     100
   );
 
@@ -57,12 +58,18 @@ export function TelemetryHud() {
 
           {/* Quick Presets & Audio Toggle (Mobile/Desktop) */}
           <div className="flex items-center gap-1.5 sm:ml-auto xl:ml-0 font-mono text-xs">
-            <a
-              href="/minecraft.html"
+            <Link
+              href="/minecraft"
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-mono text-xs font-bold border border-emerald-400 shadow-lg shadow-emerald-600/30 transition-all hover:scale-105"
             >
               <span>⛏️ 3D Minecraft View</span>
-            </a>
+            </Link>
+            <Link
+              href="/showcase"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-sky-700 hover:bg-sky-600 text-white font-mono text-xs font-bold border border-sky-400 shadow-lg shadow-sky-600/30 transition-all hover:scale-105"
+            >
+              <span>🧩 3D Models</span>
+            </Link>
             <div className="hidden sm:flex items-center gap-1 bg-slate-950/80 border border-slate-800 p-1 rounded-lg">
               <button
                 onClick={() => loadPreset("balanced")}
@@ -106,7 +113,7 @@ export function TelemetryHud() {
           {/* Budget Gauge */}
           <div
             className={`px-3 py-2 rounded-lg border flex flex-col justify-between transition-all ${
-              telemetry.budget_xp < 0
+              telemetry.budget_m < 0
                 ? "bg-rose-950/50 border-rose-500/80 text-rose-300 shadow-md shadow-rose-950/40"
                 : "bg-slate-900/90 border-slate-800 text-slate-200"
             }`}
@@ -115,15 +122,15 @@ export function TelemetryHud() {
               <span className="flex items-center gap-1 font-semibold">
                 <Coins className="h-3 w-3 text-amber-400" /> BUDGET
               </span>
-              <span>{telemetry.budget_xp}/{activeMission.initialBudget} XP</span>
+              <span>{telemetry.budget_m}/{activeMission.initialBudget} XP</span>
             </div>
             <div className="text-sm font-bold mt-0.5">
-              {telemetry.budget_xp >= 0 ? `${telemetry.budget_xp} XP` : "OVERBUDGET"}
+              {telemetry.budget_m >= 0 ? `${telemetry.budget_m} XP` : "OVERBUDGET"}
             </div>
             <div className="w-full bg-slate-800/80 h-1.5 rounded-full mt-1.5 overflow-hidden">
               <div
                 className={`h-full transition-all duration-300 ${
-                  telemetry.budget_xp < 0 ? "bg-rose-500" : "bg-amber-400"
+                  telemetry.budget_m < 0 ? "bg-rose-500" : "bg-amber-400"
                 }`}
                 style={{ width: `${budgetPct}%` }}
               />

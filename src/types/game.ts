@@ -6,7 +6,7 @@ export interface SpacecraftComponent {
   subsystem: SubsystemType;
   mass_kg: number;
   power_w: number;
-  cost_xp: number;
+  cost_m: number;
   thrust_kn: number;
   data_mbps: number;
   color: string;
@@ -20,8 +20,8 @@ export interface SpacecraftComponent {
 export type GridSlot = SpacecraftComponent | null;
 
 export interface TelemetryState {
-  budget_xp: number;
-  spent_cost_xp: number;
+  budget_m: number;
+  spent_cost_m: number;
   total_mass_kg: number;
   net_power_watts: number;
   net_data_mbps: number;

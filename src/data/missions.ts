@@ -6,13 +6,13 @@ export const MISSIONS: MissionScenario[] = [
     name: "Artemis Path: Lunar Orbiter",
     target: "Moon (Trans-Lunar Injection)",
     cmlLevel: "CML 1 (Concept Feasibility)",
-    objective: "Achieve positive power, at least 40 kN thrust to escape LEO, and stay within an 80 XP budget limit.",
+    objective: "Achieve positive power, at least 40 kN thrust to escape LEO, and stay within an $80M budget limit.",
     initialBudget: 80,
     minThrustKn: 40,
     minDataDelivered: false,
     requiredBatteryCount: 1,
     briefing:
-      "NASA Mission Design Lab (MDL) Phase-A Study: Design a lunar transfer CubeSat. Must generate sufficient power to prevent eclipse brownouts, overcome Earth gravitational pull with >= 40 kN thrust, and not exceed 80 XP cost.",
+      "NASA Mission Design Lab (MDL) Phase-A Study: Design a lunar transfer CubeSat. Must generate sufficient power to prevent eclipse brownouts, overcome Earth gravitational pull with >= 40 kN thrust, and not exceed $80M cost.",
     tips: [
       "Solar arrays generate +50W each; balance with ion thruster (-40W) consumption.",
       "At least 1 Battery is required to survive the 35-minute lunar orbital eclipse.",

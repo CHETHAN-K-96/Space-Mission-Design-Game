@@ -161,10 +161,10 @@ export function MissionVizModal() {
                     <span className="text-[10px] text-slate-400 uppercase">Budget Remaining</span>
                     <div
                       className={`text-base font-bold mt-1 ${
-                        telemetry.budget_xp >= 0 ? "text-emerald-400" : "text-rose-400"
+                        telemetry.budget_m >= 0 ? "text-emerald-400" : "text-rose-400"
                       }`}
                     >
-                      {telemetry.budget_xp} XP
+                      {telemetry.budget_m} XP
                     </div>
                     <span className="text-[9px] text-slate-500">Reserve Fund</span>
                   </div>

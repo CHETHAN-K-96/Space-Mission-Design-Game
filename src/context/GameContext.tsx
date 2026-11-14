@@ -187,7 +187,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
       if (!slot) return;
       mass += slot.mass_kg;
       power += slot.power_w;
-      spentCost += slot.cost_xp;
+      spentCost += slot.cost_m;
       thrust += slot.thrust_kn;
       dataRate += slot.data_mbps;
 
@@ -205,8 +205,8 @@ export function GameProvider({ children }: { children: ReactNode }) {
     const commsBalanced = dataRate <= 0;
 
     return {
-      budget_xp: budgetRemaining,
-      spent_cost_xp: spentCost,
+      budget_m: budgetRemaining,
+      spent_cost_m: spentCost,
       total_mass_kg: mass,
       net_power_watts: power,
       net_data_mbps: dataRate,
@@ -257,7 +257,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
     const thruster = COMPONENT_CATALOG.find((c) => c.id === "ion_thruster")!;
 
     if (presetKey === "minimal") {
-      // 1 Solar (10), 1 Battery (5), 1 Thruster (25) = 40 XP
+      // 1 Solar (10), 1 Battery (5), 1 Thruster (25) = $40M
       newGrid[11] = solar;
       newGrid[12] = battery;
       newGrid[17] = thruster;
@@ -296,11 +296,11 @@ export function GameProvider({ children }: { children: ReactNode }) {
     }
 
     // 1. Budget Check
-    if (telemetry.budget_xp < 0) {
-      errors.push(`Mission Abort: Over Budget by ${Math.abs(telemetry.budget_xp)} XP.`);
-      logs.push(`FAIL: Cost ceiling breached. Allocated ${activeMission.initialBudget} XP, spent ${telemetry.spent_cost_xp} XP.`);
+    if (telemetry.budget_m < 0) {
+      errors.push(`Mission Abort: Over Budget by ${Math.abs(telemetry.budget_m)} XP.`);
+      logs.push(`FAIL: Cost ceiling breached. Allocated ${activeMission.initialBudget} XP, spent ${telemetry.spent_cost_m} XP.`);
     } else {
-      logs.push(`PASS: Budget certified with ${telemetry.budget_xp} XP reserve.`);
+      logs.push(`PASS: Budget certified with ${telemetry.budget_m} XP reserve.`);
     }
 
     // 2. Thrust-to-Weight Check (Earth gravity lift)
@@ -356,7 +356,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
 
     // Calculate score
     const score = passed
-      ? Math.max(100 + telemetry.budget_xp * 2 + (telemetry.payloadCount * 50) - (telemetry.total_mass_kg), 50)
+      ? Math.max(100 + telemetry.budget_m * 2 + (telemetry.payloadCount * 50) - (telemetry.total_mass_kg), 50)
       : 0;
 
     const cmlAchieved = passed ? "CML 3 (Point Design Validated)" : "CML 1 (Concept Abort)";

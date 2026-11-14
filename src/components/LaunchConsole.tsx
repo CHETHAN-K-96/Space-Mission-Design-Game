@@ -18,7 +18,7 @@ import {
 export function LaunchConsole() {
   const { grid, telemetry, activeMission, launchMission } = useGame();
 
-  const isBudgetOk = telemetry.budget_xp >= 0;
+  const isBudgetOk = telemetry.budget_m >= 0;
   const isThrustOk =
     telemetry.total_thrust_kn >= telemetry.minRequiredThrust &&
     telemetry.total_thrust_kn >= activeMission.minThrustKn &&
@@ -39,7 +39,7 @@ export function LaunchConsole() {
           {/* 1. Budget Constraint */}
           <div className="flex items-center justify-between p-2 rounded-lg bg-slate-950/60 border border-slate-800/80">
             <span className="text-slate-400 flex items-center gap-1.5">
-              <Coins className="h-3.5 w-3.5 text-amber-400" /> XP Budget
+              <Coins className="h-3.5 w-3.5 text-amber-400" /> $M Budget
             </span>
             {isBudgetOk ? (
               <span className="text-emerald-400 flex items-center gap-1 text-[11px] font-semibold">

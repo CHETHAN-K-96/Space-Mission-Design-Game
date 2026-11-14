@@ -4,12 +4,13 @@
   "private": true,
   "description": "NASA Space Apps Challenge: Minecraft-style Systems Engineering Spacecraft Assembly Game",
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev -p 3001",
     "build": "next build",
-    "start": "next start",
+    "start": "next start -p 3001",
     "lint": "next lint"
   },
   "dependencies": {
+    "@types/three": "^0.187.0",
     "canvas-confetti": "^1.9.3",
     "clsx": "^2.1.1",
     "framer-motion": "^11.11.17",
@@ -17,7 +18,8 @@
     "next": "14.2.18",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "tailwind-merge": "^2.5.4"
+    "tailwind-merge": "^2.5.4",
+    "three": "^0.187.0"
   },
   "devDependencies": {
     "@types/canvas-confetti": "^1.9.0",
