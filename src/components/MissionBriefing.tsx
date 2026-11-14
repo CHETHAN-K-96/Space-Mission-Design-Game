@@ -5,15 +5,28 @@ import { useGame } from "../context/GameContext";
 import { MISSIONS } from "../data/missions";
 import {
   Compass,
-  Layers,
   ChevronDown,
   Info,
-  CheckCircle2,
   BookOpen,
+  DollarSign,
+  Flame,
+  Zap,
+  Battery,
+  Radio,
 } from "lucide-react";
 
 export function MissionBriefing() {
-  const { activeMission, selectMission } = useGame();
+  const { activeMission, selectMission, difficulty } = useGame();
+
+  const difficultyMultiplier =
+    difficulty === "easy"
+      ? { budget: 1.5, thrust: 0.8 }
+      : difficulty === "hard"
+        ? { budget: 0.85, thrust: 1.25 }
+        : { budget: 1.0, thrust: 1.0 };
+
+  const currentBudgetM = (activeMission.baseBudgetM * difficultyMultiplier.budget).toFixed(1);
+  const currentThrustKn = Math.round(activeMission.minThrustKn * difficultyMultiplier.thrust);
 
   return (
     <div className="space-y-4">
@@ -37,7 +50,7 @@ export function MissionBriefing() {
           >
             {MISSIONS.map((m) => (
               <option key={m.id} value={m.id}>
-                {m.name} ({m.target})
+                {m.name} (${(m.baseBudgetM * difficultyMultiplier.budget).toFixed(1)}M)
               </option>
             ))}
           </select>
@@ -51,35 +64,45 @@ export function MissionBriefing() {
         {/* Engineering Constraints Table */}
         <div className="border-t border-slate-800/80 pt-3 space-y-2 font-mono text-xs">
           <div className="text-[10px] text-slate-400 uppercase tracking-wider font-bold">
-            NASA MDL Baseline Constraints
+            NASA Baseline Constraints ({difficulty.toUpperCase()})
           </div>
 
           <div className="flex items-center justify-between py-1 border-b border-slate-800/40">
-            <span className="text-slate-400">Budget Limit:</span>
-            <span className="text-amber-400 font-bold">{activeMission.initialBudget} XP</span>
+            <span className="text-slate-400 flex items-center gap-1">
+              <DollarSign className="h-3 w-3 text-cyan-400" /> Budget Ceiling:
+            </span>
+            <span className="text-cyan-400 font-bold">${currentBudgetM}M</span>
           </div>
 
           <div className="flex items-center justify-between py-1 border-b border-slate-800/40">
-            <span className="text-slate-400">Min Thrust (Exit LEO):</span>
-            <span className="text-rose-400 font-bold">&gt;= {activeMission.minThrustKn} kN</span>
+            <span className="text-slate-400 flex items-center gap-1">
+              <Flame className="h-3 w-3 text-orange-400" /> Min Lift Thrust:
+            </span>
+            <span className="text-orange-400 font-bold">&gt;= {currentThrustKn} kN</span>
           </div>
 
           <div className="flex items-center justify-between py-1 border-b border-slate-800/40">
-            <span className="text-slate-400">Power Net Margin:</span>
-            <span className="text-emerald-400 font-bold">&gt;= 0 W (No Brownout)</span>
+            <span className="text-slate-400 flex items-center gap-1">
+              <Zap className="h-3 w-3 text-yellow-400" /> Net EPS Margin:
+            </span>
+            <span className="text-emerald-400 font-bold">&gt;= 0 W (Sunlight)</span>
           </div>
 
           <div className="flex items-center justify-between py-1 border-b border-slate-800/40">
-            <span className="text-slate-400">Eclipse Buffer:</span>
+            <span className="text-slate-400 flex items-center gap-1">
+              <Battery className="h-3 w-3 text-emerald-400" /> Eclipse Umbra:
+            </span>
             <span className="text-purple-400 font-bold">
-              &gt;= {activeMission.requiredBatteryCount} Battery Block(s)
+              &gt;= {activeMission.minBatteries} Battery Pack(s)
             </span>
           </div>
 
           <div className="flex items-center justify-between py-1">
-            <span className="text-slate-400">Payload Downlink:</span>
+            <span className="text-slate-400 flex items-center gap-1">
+              <Radio className="h-3 w-3 text-cyan-400" /> Telemetry Comms:
+            </span>
             <span className="text-cyan-400 font-bold">
-              {activeMission.minDataDelivered ? "High-Gain Antenna Required" : "Recommended"}
+              {activeMission.requireClosedComms ? "Closed Link Mandatory" : "Recommended"}
             </span>
           </div>
         </div>
@@ -103,11 +126,10 @@ export function MissionBriefing() {
       {/* NASA CubeSat 101 Educational Callout */}
       <div className="bg-slate-900/60 border border-slate-800/70 rounded-xl p-4 font-mono text-xs text-slate-400">
         <div className="flex items-center gap-1.5 text-cyan-400 font-semibold mb-2 text-[11px] uppercase tracking-wider">
-          <BookOpen className="h-3.5 w-3.5" /> CubeSat 101 Standard
+          <BookOpen className="h-3.5 w-3.5" /> Creative Design Freedom
         </div>
         <p className="text-[11px] leading-relaxed font-sans text-slate-300">
-          In actual NASA CubeSat development (CSLI Program), spacecraft are built from standardized 1U form-factor blocks (10cm x 10cm x 10cm).
-          Every component placed represents a physical mass and electrical load trade-off that determines orbit lifetime.
+          There is no single rigid solution! You can design a lightweight electric propulsion probe, a high-thrust solid booster satellite, or a heavy multi-instrument observatory.
         </p>
       </div>
     </div>

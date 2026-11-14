@@ -1,11 +1,12 @@
 "use client";
 
-import React, { createContext, useContext, useState, useMemo, useEffect, ReactNode } from "react";
+import React, { createContext, useContext, useState, useMemo, ReactNode } from "react";
 import {
   SpacecraftComponent,
   GridSlot,
   TelemetryState,
   MissionScenario,
+  DifficultyMode,
   LaunchStage,
   ValidationReport,
 } from "../types/game";
@@ -16,6 +17,7 @@ interface GameContextType {
   grid: GridSlot[];
   telemetry: TelemetryState;
   activeMission: MissionScenario;
+  difficulty: DifficultyMode;
   selectedComponent: SpacecraftComponent | null;
   draggedComponent: SpacecraftComponent | null;
   hoveredIndex: number | null;
@@ -23,17 +25,22 @@ interface GameContextType {
   launchStage: LaunchStage;
   validationReport: ValidationReport | null;
   showModal: boolean;
+  showDatasetModal: boolean;
+  showGuideModal: boolean;
   soundEnabled: boolean;
   setSoundEnabled: (enabled: boolean) => void;
+  setDifficulty: (diff: DifficultyMode) => void;
   setSelectedComponent: (comp: SpacecraftComponent | null) => void;
   setDraggedComponent: (comp: SpacecraftComponent | null) => void;
   setHoveredIndex: (idx: number | null) => void;
   placeComponent: (index: number, component: SpacecraftComponent | null) => void;
   clearGrid: () => void;
   selectMission: (missionId: string) => void;
-  loadPreset: (presetKey: "balanced" | "minimal" | "science") => void;
+  loadPreset: (presetKey: "artemis" | "minimal" | "science") => void;
   launchMission: () => void;
   closeModal: () => void;
+  setShowDatasetModal: (show: boolean) => void;
+  setShowGuideModal: (show: boolean) => void;
   playSound: (type: "place" | "remove" | "launch" | "success" | "fail") => void;
 }
 
@@ -41,14 +48,16 @@ const GameContext = createContext<GameContextType | undefined>(undefined);
 
 const GRID_SIZE = 5;
 
-// Web Audio API Sound Synthesizer for high-tech sci-fi feedback
+// Web Audio API Sound Synthesizer
 class SoundFX {
   private ctx: AudioContext | null = null;
 
   private getContext(): AudioContext | null {
     if (typeof window === "undefined") return null;
     if (!this.ctx) {
-      const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      const AudioCtx =
+        window.AudioContext ||
+        (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
       if (AudioCtx) this.ctx = new AudioCtx();
     }
     if (this.ctx && this.ctx.state === "suspended") {
@@ -78,28 +87,27 @@ class SoundFX {
     if (!ctx) return;
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
-    osc.type = "triangle";
-    osc.frequency.setValueAtTime(600, ctx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(220, ctx.currentTime + 0.09);
-    gain.gain.setValueAtTime(0.15, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.09);
+    osc.type = "sawtooth";
+    osc.frequency.setValueAtTime(320, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(110, ctx.currentTime + 0.08);
+    gain.gain.setValueAtTime(0.12, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.08);
     osc.connect(gain);
     gain.connect(ctx.destination);
     osc.start();
-    osc.stop(ctx.currentTime + 0.1);
+    osc.stop(ctx.currentTime + 0.09);
   }
 
   playLaunch() {
     const ctx = this.getContext();
     if (!ctx) return;
-    // Low frequency rumble
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     osc.type = "sawtooth";
-    osc.frequency.setValueAtTime(65, ctx.currentTime);
-    osc.frequency.linearRampToValueAtTime(140, ctx.currentTime + 1.2);
-    gain.gain.setValueAtTime(0.3, ctx.currentTime);
-    gain.gain.linearRampToValueAtTime(0.01, ctx.currentTime + 1.4);
+    osc.frequency.setValueAtTime(80, ctx.currentTime);
+    osc.frequency.linearRampToValueAtTime(260, ctx.currentTime + 1.2);
+    gain.gain.setValueAtTime(0.25, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 1.4);
     osc.connect(gain);
     gain.connect(ctx.destination);
     osc.start();
@@ -109,31 +117,29 @@ class SoundFX {
   playSuccess() {
     const ctx = this.getContext();
     if (!ctx) return;
-    const notes = [523.25, 659.25, 783.99, 1046.5]; // C5, E5, G5, C6
-    notes.forEach((freq, idx) => {
+    [523.25, 659.25, 783.99, 1046.5].forEach((freq, idx) => {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
-      osc.type = "sine";
-      osc.frequency.setValueAtTime(freq, ctx.currentTime + idx * 0.12);
-      gain.gain.setValueAtTime(0.18, ctx.currentTime + idx * 0.12);
-      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + idx * 0.12 + 0.35);
+      osc.type = "triangle";
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0.12, ctx.currentTime + idx * 0.1);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + idx * 0.1 + 0.3);
       osc.connect(gain);
       gain.connect(ctx.destination);
-      osc.start(ctx.currentTime + idx * 0.12);
-      osc.stop(ctx.currentTime + idx * 0.12 + 0.4);
+      osc.start(ctx.currentTime + idx * 0.1);
+      osc.stop(ctx.currentTime + idx * 0.1 + 0.35);
     });
   }
 
   playFail() {
     const ctx = this.getContext();
     if (!ctx) return;
-    const notes = [311.13, 293.66, 277.18]; // Eb4, D4, C#4
-    notes.forEach((freq, idx) => {
+    [240, 190, 150].forEach((freq, idx) => {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.type = "sawtooth";
-      osc.frequency.setValueAtTime(freq, ctx.currentTime + idx * 0.14);
-      gain.gain.setValueAtTime(0.2, ctx.currentTime + idx * 0.14);
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0.15, ctx.currentTime + idx * 0.14);
       gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + idx * 0.14 + 0.3);
       osc.connect(gain);
       gain.connect(ctx.destination);
@@ -147,6 +153,7 @@ const sfx = new SoundFX();
 
 export function GameProvider({ children }: { children: ReactNode }) {
   const [activeMission, setActiveMission] = useState<MissionScenario>(MISSIONS[0]);
+  const [difficulty, setDifficulty] = useState<DifficultyMode>("normal");
   const [grid, setGrid] = useState<GridSlot[]>(() =>
     Array(GRID_SIZE * GRID_SIZE).fill(null)
   );
@@ -160,6 +167,8 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const [isLaunching, setIsLaunching] = useState(false);
   const [launchStage, setLaunchStage] = useState<LaunchStage>("IDLE");
   const [showModal, setShowModal] = useState(false);
+  const [showDatasetModal, setShowDatasetModal] = useState(false);
+  const [showGuideModal, setShowGuideModal] = useState(false);
   const [validationReport, setValidationReport] = useState<ValidationReport | null>(null);
 
   const playSound = (type: "place" | "remove" | "launch" | "success" | "fail") => {
@@ -171,44 +180,71 @@ export function GameProvider({ children }: { children: ReactNode }) {
     if (type === "fail") sfx.playFail();
   };
 
-  // Telemetry computation using NASA CubeSat 101 formulas
+  // Difficulty modifiers:
+  // easy: +50% budget, 0.8x thrust requirement
+  // normal: 1.0x budget, 1.0x thrust requirement
+  // hard: -15% budget, 1.25x thrust requirement
+  const difficultyMultiplier = useMemo(() => {
+    if (difficulty === "easy") return { budget: 1.5, thrust: 0.8 };
+    if (difficulty === "hard") return { budget: 0.85, thrust: 1.25 };
+    return { budget: 1.0, thrust: 1.0 };
+  }, [difficulty]);
+
+  // Telemetry computation using NASA CubeSat 101 formulas & Real Budget ($M)
   const telemetry = useMemo<TelemetryState>(() => {
     let mass = 0;
-    let power = 0;
+    let powerGen = 0;
+    let powerCons = 0;
     let spentCost = 0;
     let thrust = 0;
     let dataRate = 0;
     let batteryCount = 0;
     let solarCount = 0;
     let payloadCount = 0;
-    let antennaCount = 0;
+    let commsCount = 0;
 
     grid.forEach((slot) => {
       if (!slot) return;
       mass += slot.mass_kg;
-      power += slot.power_w;
-      spentCost += slot.cost_xp;
+      if (slot.power_w > 0) powerGen += slot.power_w;
+      else powerCons += Math.abs(slot.power_w);
+
+      spentCost += slot.cost_m;
       thrust += slot.thrust_kn;
       dataRate += slot.data_mbps;
 
-      if (slot.id === "battery_pack") batteryCount++;
+      if (slot.isBattery) batteryCount++;
       if (slot.id === "solar_array") solarCount++;
-      if (slot.id === "spectral_camera") payloadCount++;
-      if (slot.id === "high_gain_antenna") antennaCount++;
+      if (slot.isPayload) payloadCount++;
+      if (slot.subsystem === "COMMS") commsCount++;
     });
 
-    const budgetRemaining = activeMission.initialBudget - spentCost;
-    // NASA Lift requirement: F_thrust >= mass_kg * 0.0098 kN (Gravity force at Earth 1g)
-    const minRequiredThrust = Number((mass * 0.0098).toFixed(2));
-    const twr = mass > 0 ? Number((thrust / (mass * 0.0098)).toFixed(2)) : 0;
-    const eclipseReady = batteryCount >= activeMission.requiredBatteryCount;
-    const commsBalanced = dataRate <= 0;
+    spentCost = parseFloat(spentCost.toFixed(1));
+    const budgetCap = parseFloat((activeMission.baseBudgetM * difficultyMultiplier.budget).toFixed(1));
+    const budgetRemaining = parseFloat((budgetCap - spentCost).toFixed(1));
+
+    const minRequiredThrust = parseFloat(
+      (activeMission.minThrustKn * difficultyMultiplier.thrust).toFixed(0)
+    );
+    const twr = mass > 0 ? parseFloat((thrust / (mass * 1.8)).toFixed(2)) : 0;
+    const netPower = powerGen - powerCons;
+    const eclipseMinutes = Math.min(45, batteryCount * 35);
+
+    const eclipseReady = batteryCount >= activeMission.minBatteries;
+    const commsBalanced = activeMission.requireClosedComms ? dataRate <= 0 : true;
+    const thrustReady = thrust >= minRequiredThrust && twr >= 1.0 && mass > 0;
+    const budgetReady = spentCost <= budgetCap && spentCost > 0;
+    const powerReady = netPower >= 0 && solarCount > 0;
+    const scienceReady = payloadCount >= activeMission.minPayloads;
 
     return {
-      budget_xp: budgetRemaining,
-      spent_cost_xp: spentCost,
+      budget_cap_m: budgetCap,
+      spent_cost_m: spentCost,
+      budget_remaining_m: budgetRemaining,
       total_mass_kg: mass,
-      net_power_watts: power,
+      net_power_watts: netPower,
+      power_generation_w: powerGen,
+      power_consumption_w: powerCons,
       net_data_mbps: dataRate,
       total_thrust_kn: thrust,
       minRequiredThrust,
@@ -216,28 +252,30 @@ export function GameProvider({ children }: { children: ReactNode }) {
       batteryCount,
       solarCount,
       payloadCount,
-      antennaCount,
+      commsCount,
+      eclipseMinutes,
       eclipseReady,
       commsBalanced,
+      thrustReady,
+      budgetReady,
+      powerReady,
+      scienceReady,
     };
-  }, [grid, activeMission]);
+  }, [grid, activeMission, difficultyMultiplier]);
 
   const placeComponent = (index: number, component: SpacecraftComponent | null) => {
-    if (component) {
-      playSound("place");
-    } else {
-      playSound("remove");
-    }
     setGrid((prev) => {
       const next = [...prev];
       next[index] = component;
       return next;
     });
+    if (component) playSound("place");
+    else playSound("remove");
   };
 
   const clearGrid = () => {
-    playSound("remove");
     setGrid(Array(GRID_SIZE * GRID_SIZE).fill(null));
+    playSound("remove");
   };
 
   const selectMission = (missionId: string) => {
@@ -247,119 +285,99 @@ export function GameProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const loadPreset = (presetKey: "balanced" | "minimal" | "science") => {
-    playSound("place");
+  const loadPreset = (presetKey: "artemis" | "minimal" | "science") => {
     const newGrid: GridSlot[] = Array(GRID_SIZE * GRID_SIZE).fill(null);
-    const solar = COMPONENT_CATALOG.find((c) => c.id === "solar_array")!;
-    const battery = COMPONENT_CATALOG.find((c) => c.id === "battery_pack")!;
-    const camera = COMPONENT_CATALOG.find((c) => c.id === "spectral_camera")!;
-    const antenna = COMPONENT_CATALOG.find((c) => c.id === "high_gain_antenna")!;
-    const thruster = COMPONENT_CATALOG.find((c) => c.id === "ion_thruster")!;
+    const byId = (id: string) => COMPONENT_CATALOG.find((c) => c.id === id) || null;
 
-    if (presetKey === "minimal") {
-      // 1 Solar (10), 1 Battery (5), 1 Thruster (25) = 40 XP
-      newGrid[11] = solar;
-      newGrid[12] = battery;
-      newGrid[17] = thruster;
-    } else if (presetKey === "balanced") {
-      // Lunar Orbiter point design: 1 Solar, 1 Battery, 1 Thruster, 1 Antenna, 1 Camera
-      newGrid[7] = solar;
-      newGrid[11] = antenna;
-      newGrid[12] = battery;
-      newGrid[13] = camera;
-      newGrid[17] = thruster;
+    if (presetKey === "artemis") {
+      newGrid[2] = byId("avionics_cdh");
+      newGrid[7] = byId("bus_frame");
+      newGrid[6] = byId("solar_array");
+      newGrid[8] = byId("solar_array");
+      newGrid[11] = byId("battery_pack");
+      newGrid[12] = byId("patch_antenna");
+      newGrid[13] = byId("magnetometer");
+      newGrid[17] = byId("booster");
+    } else if (presetKey === "minimal") {
+      newGrid[2] = byId("avionics_cdh");
+      newGrid[7] = byId("bus_frame");
+      newGrid[6] = byId("solar_array");
+      newGrid[8] = byId("battery_pack");
+      newGrid[12] = byId("ion_thruster");
+      newGrid[13] = byId("patch_antenna");
     } else if (presetKey === "science") {
-      // Science heavy: 2 Solars, 2 Batteries, 1 Thruster, 1 Camera, 1 Antenna
-      newGrid[6] = solar;
-      newGrid[8] = solar;
-      newGrid[11] = battery;
-      newGrid[12] = camera;
-      newGrid[13] = battery;
-      newGrid[17] = thruster;
-      newGrid[18] = antenna;
+      newGrid[2] = byId("avionics_cdh");
+      newGrid[7] = byId("bus_frame");
+      newGrid[6] = byId("solar_array");
+      newGrid[8] = byId("solar_array");
+      newGrid[11] = byId("battery_pack");
+      newGrid[12] = byId("high_gain_dish");
+      newGrid[13] = byId("multispectral_cam");
+      newGrid[17] = byId("booster");
     }
+
     setGrid(newGrid);
+    playSound("place");
   };
 
   const launchMission = () => {
-    playSound("launch");
     const errors: string[] = [];
     const logs: string[] = [];
 
-    logs.push("T-00:10:00 - Flight Readiness Review (FRR) initiated by Launch Director.");
-    logs.push("T-00:05:00 - Systems Engineering constraint verification running...");
+    logs.push("T-00:10:00 - Flight Readiness Review initiated at Cape Canaveral Pad 39A.");
+    logs.push(`Target Profile: ${activeMission.name} (${activeMission.target})`);
+    logs.push(`Difficulty Flow: ${difficulty.toUpperCase()} MODE.`);
 
-    // 0. Empty Grid check
-    if (telemetry.total_mass_kg === 0) {
-      errors.push("Mission Abort: Vehicle Assembly Grid is empty. No spacecraft mounted.");
-      logs.push("FAIL: Payload mass is 0 kg. No structural bus detected.");
-    }
-
-    // 1. Budget Check
-    if (telemetry.budget_xp < 0) {
-      errors.push(`Mission Abort: Over Budget by ${Math.abs(telemetry.budget_xp)} XP.`);
-      logs.push(`FAIL: Cost ceiling breached. Allocated ${activeMission.initialBudget} XP, spent ${telemetry.spent_cost_xp} XP.`);
+    if (telemetry.spent_cost_m > telemetry.budget_cap_m) {
+      errors.push(`Budget ceiling breached by $${Math.abs(telemetry.budget_remaining_m).toFixed(1)}M.`);
+      logs.push(`FAIL: Cost ceiling breached ($${telemetry.spent_cost_m}M / $${telemetry.budget_cap_m}M).`);
     } else {
-      logs.push(`PASS: Budget certified with ${telemetry.budget_xp} XP reserve.`);
+      logs.push(`PASS: Budget certified with $${telemetry.budget_remaining_m}M flight reserve.`);
     }
 
-    // 2. Thrust-to-Weight Check (Earth gravity lift)
     if (telemetry.total_thrust_kn < telemetry.minRequiredThrust) {
-      errors.push(
-        `Mission Abort: Insufficient thrust to lift vehicle mass (${telemetry.total_thrust_kn} kN < ${telemetry.minRequiredThrust} kN required).`
-      );
-      logs.push("FAIL: Gravity vector exceeds propulsion authority. Spacecraft stalls on pad.");
-    } else if (telemetry.total_thrust_kn < activeMission.minThrustKn) {
-      errors.push(
-        `Mission Abort: Flight trajectory requires minimum ${activeMission.minThrustKn} kN thrust for orbital insertion.`
-      );
-      logs.push(`FAIL: Trajectory shortfall. Spacecraft thrust (${telemetry.total_thrust_kn} kN) cannot escape Earth orbit.`);
+      errors.push(`Insufficient propulsion (${telemetry.total_thrust_kn} kN < ${telemetry.minRequiredThrust} kN required).`);
+      logs.push("FAIL: Spacecraft cannot achieve orbit escape velocity.");
+    } else if (telemetry.twr < 1.0) {
+      errors.push(`Thrust-to-weight ratio too low (${telemetry.twr}x < 1.0x). Cannot lift off.`);
+      logs.push("FAIL: TWR below unity.");
     } else {
-      logs.push(`PASS: Propulsion sufficient. TWR = ${telemetry.twr}.`);
+      logs.push(`PASS: Propulsion certified (${telemetry.total_thrust_kn} kN, ${telemetry.twr}x TWR).`);
     }
 
-    // 3. Power Balance Check
     if (telemetry.net_power_watts < 0) {
-      errors.push(
-        `Mission Abort: Spacecraft experiences brownout during operational phase (${telemetry.net_power_watts} W deficit).`
-      );
-      logs.push("FAIL: EPS bus collapse. Generation lower than subsystem draw.");
-    } else if (telemetry.solarCount === 0 && telemetry.total_mass_kg > 0) {
-      errors.push("Mission Abort: No solar generation arrays installed. Spacecraft will drain batteries.");
-      logs.push("FAIL: Zero primary power source.");
+      errors.push(`Negative power balance (${telemetry.net_power_watts} W). Spacecraft will brown out.`);
+      logs.push("FAIL: EPS power deficit.");
     } else {
-      logs.push(`PASS: Electrical power margin positive (+${telemetry.net_power_watts} W).`);
+      logs.push(`PASS: Electrical power margin validated (+${telemetry.net_power_watts} W net).`);
     }
 
-    // 4. Eclipse Battery Check
-    if (telemetry.batteryCount < activeMission.requiredBatteryCount && telemetry.total_mass_kg > 0) {
-      errors.push(
-        `Mission Abort: Insufficient energy storage. Mission demands at least ${activeMission.requiredBatteryCount} Battery Block(s) for eclipse survival.`
-      );
-      logs.push("FAIL: Umbra phase loss. Spacecraft freezes without battery backup.");
+    if (!telemetry.eclipseReady) {
+      errors.push(`Eclipse storage insufficient (requires ${activeMission.minBatteries} battery block for 35m umbra).`);
+      logs.push("FAIL: Spacecraft will power down during dark-side occultation.");
     } else {
-      logs.push(`PASS: Battery storage adequate for orbital eclipse cycle (${telemetry.batteryCount} installed).`);
+      logs.push(`PASS: Battery storage certified for ${telemetry.eclipseMinutes} minutes of eclipse.`);
     }
 
-    // 5. Science & Telemetry Downlink Check
-    if (telemetry.payloadCount > 0 && telemetry.antennaCount === 0) {
-      errors.push("Mission Abort: Multispectral payload produces un-downlinkable data. High-Gain Antenna required.");
-      logs.push("FAIL: Telemetry buffer saturated. Zero science data can reach NASA Ground Station.");
-    } else if (activeMission.minDataDelivered && telemetry.payloadCount === 0) {
-      errors.push("Mission Abort: Mission objective requires deploying scientific imaging payload.");
-      logs.push("FAIL: Primary science objective unmet.");
+    if (!telemetry.commsBalanced) {
+      errors.push(`Comms downlink deficit (+${telemetry.net_data_mbps} MBps unlinked). Memory buffer overflow.`);
+      logs.push("FAIL: Untransmitted telemetry packet buffer full.");
     } else {
-      logs.push("PASS: Communications and science downlink loop closed.");
+      logs.push("PASS: RF communications link margin closed with Deep Space Network.");
+    }
+
+    if (!telemetry.scienceReady) {
+      errors.push(`Science payload missing (requires >= ${activeMission.minPayloads} scientific instruments).`);
+      logs.push("FAIL: Mission objectives unfulfilled.");
+    } else {
+      logs.push(`PASS: Scientific payload instruments integrated (${telemetry.payloadCount} sensor blocks).`);
     }
 
     const passed = errors.length === 0;
-
-    // Calculate score
+    const cmlAchieved = passed ? "CML Level 3 (Point Design Validated)" : "CML Level 1 (Concept Failed)";
     const score = passed
-      ? Math.max(100 + telemetry.budget_xp * 2 + (telemetry.payloadCount * 50) - (telemetry.total_mass_kg), 50)
-      : 0;
-
-    const cmlAchieved = passed ? "CML 3 (Point Design Validated)" : "CML 1 (Concept Abort)";
+      ? Math.round(1000 + telemetry.budget_remaining_m * 50 + telemetry.twr * 100)
+      : 250;
 
     setValidationReport({
       passed,
@@ -371,21 +389,25 @@ export function GameProvider({ children }: { children: ReactNode }) {
 
     setIsLaunching(true);
     setShowModal(true);
-    setLaunchStage("COUNTDOWN");
+    setLaunchStage("PAD_IGNITION");
+    playSound(passed ? "launch" : "fail");
 
+    // Flight sequence state machine
     if (passed) {
-      setTimeout(() => setLaunchStage("MAX_Q"), 1200);
-      setTimeout(() => setLaunchStage("STAGE_SEP"), 2600);
-      setTimeout(() => setLaunchStage("ORBITAL_INSERTION"), 4000);
+      setTimeout(() => setLaunchStage("MAX_Q"), 1000);
+      setTimeout(() => setLaunchStage("STAGE_SEP"), 2200);
+      setTimeout(() => setLaunchStage("LEO_PARKING"), 3400);
+      setTimeout(() => setLaunchStage("TLI_BURN"), 4600);
+      setTimeout(() => setLaunchStage("LUNAR_ORBIT"), 5800);
       setTimeout(() => {
         setLaunchStage("FINAL_REPORT");
         playSound("success");
-      }, 5500);
+      }, 7000);
     } else {
       setTimeout(() => {
         setLaunchStage("FINAL_REPORT");
         playSound("fail");
-      }, 1600);
+      }, 2000);
     }
   };
 
@@ -401,6 +423,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
         grid,
         telemetry,
         activeMission,
+        difficulty,
         selectedComponent,
         draggedComponent,
         hoveredIndex,
@@ -408,8 +431,11 @@ export function GameProvider({ children }: { children: ReactNode }) {
         launchStage,
         validationReport,
         showModal,
+        showDatasetModal,
+        showGuideModal,
         soundEnabled,
         setSoundEnabled,
+        setDifficulty,
         setSelectedComponent,
         setDraggedComponent,
         setHoveredIndex,
@@ -419,6 +445,8 @@ export function GameProvider({ children }: { children: ReactNode }) {
         loadPreset,
         launchMission,
         closeModal,
+        setShowDatasetModal,
+        setShowGuideModal,
         playSound,
       }}
     >

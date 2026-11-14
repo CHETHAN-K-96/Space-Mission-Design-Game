@@ -12,10 +12,15 @@ import {
   Rocket,
   Cpu,
   Trash2,
+  Box,
+  Zap,
+  Wind,
+  Magnet,
+  Sparkles,
 } from "lucide-react";
 
 // Map icon name to Lucide component
-function ComponentIcon({
+export function ComponentIcon({
   name,
   className,
 }: {
@@ -23,16 +28,26 @@ function ComponentIcon({
   className?: string;
 }) {
   switch (name) {
+    case "Rocket":
+      return <Rocket className={className} />;
+    case "Zap":
+      return <Zap className={className} />;
+    case "Wind":
+      return <Wind className={className} />;
+    case "Box":
+      return <Box className={className} />;
+    case "Cpu":
+      return <Cpu className={className} />;
     case "Sun":
       return <Sun className={className} />;
     case "Battery":
       return <Battery className={className} />;
-    case "Camera":
-      return <Camera className={className} />;
     case "Radio":
       return <Radio className={className} />;
-    case "Rocket":
-      return <Rocket className={className} />;
+    case "Camera":
+      return <Camera className={className} />;
+    case "Magnet":
+      return <Magnet className={className} />;
     default:
       return <Cpu className={className} />;
   }
@@ -43,6 +58,7 @@ export function AssemblyGrid() {
     grid,
     placeComponent,
     clearGrid,
+    loadPreset,
     selectedComponent,
     draggedComponent,
     setDraggedComponent,
@@ -52,7 +68,7 @@ export function AssemblyGrid() {
 
   const handleSlotClick = (index: number) => {
     if (grid[index]) {
-      // Deconstruct item in this slot
+      // Remove item in this slot
       placeComponent(index, null);
     } else if (selectedComponent) {
       // Place selected item into empty slot
@@ -69,104 +85,89 @@ export function AssemblyGrid() {
     e.preventDefault();
     if (draggedComponent) {
       placeComponent(index, draggedComponent);
+      setDraggedComponent(null);
     }
-    setDraggedComponent(null);
     setHoveredIndex(null);
   };
 
   return (
-    <div className="w-full bg-slate-900/90 border border-slate-800 rounded-2xl p-4 sm:p-5 shadow-2xl backdrop-blur-md">
-      {/* VAB Header Bar */}
-      <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-800">
-        <div className="flex items-center gap-2">
-          <div className="h-3 w-3 rounded-full bg-cyan-400 animate-pulse" />
-          <h3 className="font-mono text-xs sm:text-sm font-bold uppercase tracking-wider text-slate-200">
-            Vehicle Assembly Grid (5x5 Voxel Matrix)
-          </h3>
+    <div className="w-full bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-2xl backdrop-blur-md">
+      {/* VAB Header Controls */}
+      <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-800/80">
+        <div>
+          <span className="text-xs font-mono font-bold text-slate-200 uppercase tracking-wider flex items-center gap-2">
+            <Box className="h-4 w-4 text-cyan-400" /> 5x5 Vehicle Assembly Bay (VAB)
+          </span>
+          <p className="text-[11px] text-slate-400 font-mono mt-0.5">
+            Click empty slot or drag-and-drop to mount. Click placed module to remove.
+          </p>
         </div>
-        <button
-          onClick={clearGrid}
-          className="flex items-center gap-1.5 text-xs font-mono text-slate-400 hover:text-rose-400 px-2.5 py-1 rounded-md border border-slate-800 hover:border-rose-900/50 bg-slate-950/70 transition-colors"
-          title="Clear all spacecraft blocks from grid"
-        >
-          <Trash2 className="h-3.5 w-3.5" /> Clear VAB
-        </button>
+
+        <div className="flex items-center gap-1.5 font-mono text-xs">
+          <button
+            onClick={() => loadPreset("artemis")}
+            className="px-2.5 py-1 rounded bg-blue-600/30 hover:bg-blue-600/50 border border-blue-500/40 text-blue-300 text-[11px] flex items-center gap-1 transition-colors"
+          >
+            <Sparkles className="h-3 w-3" />
+            <span>Preset</span>
+          </button>
+          <button
+            onClick={clearGrid}
+            className="px-2.5 py-1 rounded bg-rose-950/40 hover:bg-rose-950/80 border border-rose-800/60 text-rose-300 text-[11px] flex items-center gap-1 transition-colors"
+          >
+            <Trash2 className="h-3 w-3" />
+            <span>Clear</span>
+          </button>
+        </div>
       </div>
 
-      {/* 5x5 Crafting Grid Container */}
-      <div className="relative p-3 sm:p-4 bg-slate-950 rounded-xl border border-slate-800/80 shadow-inner">
-        <div className="grid grid-cols-5 gap-2 sm:gap-2.5 aspect-square max-w-[440px] mx-auto">
-          {grid.map((slot, idx) => {
-            const isHovered = hoveredIndex === idx;
-            const row = Math.floor(idx / 5);
-            const col = idx % 5;
+      {/* 5x5 Assembly Grid Matrix */}
+      <div className="flex justify-center p-2">
+        <div className="grid grid-cols-5 gap-2.5 p-3 rounded-2xl bg-slate-950/80 border border-slate-800/80 shadow-inner">
+          {grid.map((slot, index) => {
+            const isHovered = hoveredIndex === index;
+            const isOccupied = slot !== null;
 
             return (
-              <div
-                key={idx}
-                onDragOver={(e) => handleDragOver(e, idx)}
-                onDrop={(e) => handleDrop(e, idx)}
-                onClick={() => handleSlotClick(idx)}
-                className={`relative group rounded-lg border-2 transition-all duration-200 flex flex-col items-center justify-center cursor-pointer select-none ${
-                  slot
-                    ? `${slot.color} ${slot.borderColor} shadow-lg ${slot.glowColor}`
+              <motion.div
+                key={index}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => handleSlotClick(index)}
+                onDragOver={(e) => handleDragOver(e, index)}
+                onDragLeave={() => setHoveredIndex(null)}
+                onDrop={(e) => handleDrop(e, index)}
+                className={`h-16 w-16 sm:h-20 sm:w-20 rounded-xl border-2 flex flex-col items-center justify-center p-1.5 cursor-pointer select-none transition-all relative overflow-hidden ${
+                  isOccupied
+                    ? `${slot.borderColor} bg-slate-900 shadow-md ${slot.glowColor}`
                     : isHovered
-                    ? "border-cyan-400 bg-cyan-950/30 scale-[1.02]"
-                    : "border-slate-800/90 bg-slate-900/50 hover:border-slate-700 hover:bg-slate-900/80"
+                    ? "border-cyan-400 bg-cyan-950/30 shadow-lg shadow-cyan-500/20"
+                    : "border-slate-800/90 bg-slate-950/60 hover:border-slate-700 hover:bg-slate-900/60"
                 }`}
               >
-                {/* Coordinate Index */}
-                <span className="absolute top-1 left-1.5 text-[9px] font-mono text-slate-600 group-hover:text-slate-400 pointer-events-none">
-                  [{row},{col}]
-                </span>
-
                 {slot ? (
-                  <motion.div
-                    initial={{ scale: 0.6, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    exit={{ scale: 0.6, opacity: 0 }}
-                    className="flex flex-col items-center p-1 text-center"
-                  >
-                    <ComponentIcon
-                      name={slot.iconName}
-                      className="h-6 w-6 sm:h-7 sm:w-7 drop-shadow-md"
-                    />
-                    <span className="text-[10px] font-mono font-bold mt-1 line-clamp-1">
+                  <>
+                    <div className={`p-1.5 rounded-lg mb-1 ${slot.color}`}>
+                      <ComponentIcon name={slot.iconName} className="h-5 w-5 sm:h-6 sm:w-6" />
+                    </div>
+                    <span className="text-[9px] sm:text-[10px] font-mono font-bold text-white line-clamp-1 text-center w-full">
                       {slot.name.split(" ")[0]}
                     </span>
-                    <span className="text-[8px] font-mono opacity-80 uppercase">
-                      {slot.subsystem}
+                    <span className="text-[8px] font-mono text-cyan-400 font-semibold">
+                      ${slot.cost_m.toFixed(1)}M
                     </span>
-                  </motion.div>
+                  </>
                 ) : (
-                  <div className="h-4 w-4 rounded-sm border border-slate-800 group-hover:border-cyan-800/50 opacity-30" />
-                )}
-
-                {/* Hover Tooltip */}
-                {slot && (
-                  <div className="absolute z-30 bottom-full mb-2 hidden group-hover:block w-48 p-2.5 bg-slate-950 text-slate-200 text-[10px] font-mono rounded-lg border border-slate-700 shadow-2xl pointer-events-none">
-                    <p className="font-bold text-white mb-1">{slot.name}</p>
-                    <div className="text-slate-400 space-y-0.5">
-                      <div>Mass: {slot.mass_kg} kg | Cost: {slot.cost_xp} XP</div>
-                      <div>
-                        Power: {slot.power_w > 0 ? `+${slot.power_w}` : slot.power_w} W
-                      </div>
-                      {slot.thrust_kn > 0 && <div>Thrust: {slot.thrust_kn} kN</div>}
-                      {slot.data_mbps !== 0 && <div>Data: {slot.data_mbps} MBps</div>}
-                    </div>
-                    <p className="text-[9px] text-cyan-400 mt-1.5 border-t border-slate-800 pt-1">
-                      Click slot to deconstruct
-                    </p>
+                  <div className="flex flex-col items-center text-slate-700">
+                    <span className="text-lg leading-none font-light">+</span>
+                    <span className="text-[8px] font-mono text-slate-600 mt-1">
+                      {index + 1}
+                    </span>
                   </div>
                 )}
-              </div>
+              </motion.div>
             );
           })}
-        </div>
-
-        {/* Tip Footer */}
-        <div className="mt-3 text-center text-[11px] font-mono text-slate-500">
-          Tip: Drag components into slots, or select from the hotbar below and click any slot.
         </div>
       </div>
     </div>

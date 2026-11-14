@@ -5,27 +5,26 @@ import { useGame } from "../context/GameContext";
 import {
   Rocket,
   Activity,
-  Coins,
+  DollarSign,
   Flame,
   Zap,
   Battery,
   Radio,
+  Camera,
   CheckCircle2,
   XCircle,
-  AlertTriangle,
 } from "lucide-react";
 
 export function LaunchConsole() {
-  const { grid, telemetry, activeMission, launchMission } = useGame();
+  const { telemetry, activeMission, launchMission } = useGame();
 
-  const isBudgetOk = telemetry.budget_xp >= 0;
-  const isThrustOk =
-    telemetry.total_thrust_kn >= telemetry.minRequiredThrust &&
-    telemetry.total_thrust_kn >= activeMission.minThrustKn &&
-    telemetry.total_mass_kg > 0;
-  const isPowerOk = telemetry.net_power_watts >= 0 && telemetry.solarCount > 0;
-  const isBatteryOk = telemetry.eclipseReady;
-  const isCommsOk = telemetry.commsBalanced;
+  const isLaunchReady =
+    telemetry.budgetReady &&
+    telemetry.thrustReady &&
+    telemetry.powerReady &&
+    telemetry.eclipseReady &&
+    telemetry.commsBalanced &&
+    telemetry.scienceReady;
 
   return (
     <div className="space-y-4">
@@ -36,12 +35,12 @@ export function LaunchConsole() {
         </h3>
 
         <div className="space-y-2 font-mono text-xs">
-          {/* 1. Budget Constraint */}
+          {/* 1. Real Budget Constraint */}
           <div className="flex items-center justify-between p-2 rounded-lg bg-slate-950/60 border border-slate-800/80">
             <span className="text-slate-400 flex items-center gap-1.5">
-              <Coins className="h-3.5 w-3.5 text-amber-400" /> XP Budget
+              <DollarSign className="h-3.5 w-3.5 text-cyan-400" /> Budget Cap
             </span>
-            {isBudgetOk ? (
+            {telemetry.budgetReady ? (
               <span className="text-emerald-400 flex items-center gap-1 text-[11px] font-semibold">
                 <CheckCircle2 className="h-3.5 w-3.5" /> PASSED
               </span>
@@ -55,25 +54,25 @@ export function LaunchConsole() {
           {/* 2. Thrust / TWR Constraint */}
           <div className="flex items-center justify-between p-2 rounded-lg bg-slate-950/60 border border-slate-800/80">
             <span className="text-slate-400 flex items-center gap-1.5">
-              <Flame className="h-3.5 w-3.5 text-rose-400" /> TWR Lift
+              <Flame className="h-3.5 w-3.5 text-orange-400" /> Thrust & TWR
             </span>
-            {isThrustOk ? (
+            {telemetry.thrustReady ? (
               <span className="text-emerald-400 flex items-center gap-1 text-[11px] font-semibold">
                 <CheckCircle2 className="h-3.5 w-3.5" /> PASSED
               </span>
             ) : (
               <span className="text-rose-400 flex items-center gap-1 text-[11px] font-semibold">
-                <XCircle className="h-3.5 w-3.5" /> STALL
+                <XCircle className="h-3.5 w-3.5" /> INSUFF
               </span>
             )}
           </div>
 
-          {/* 3. Power Bus Constraint */}
+          {/* 3. Solar Power Generation */}
           <div className="flex items-center justify-between p-2 rounded-lg bg-slate-950/60 border border-slate-800/80">
             <span className="text-slate-400 flex items-center gap-1.5">
-              <Zap className="h-3.5 w-3.5 text-yellow-400" /> EPS Bus
+              <Zap className="h-3.5 w-3.5 text-yellow-400" /> Positive Power
             </span>
-            {isPowerOk ? (
+            {telemetry.powerReady ? (
               <span className="text-emerald-400 flex items-center gap-1 text-[11px] font-semibold">
                 <CheckCircle2 className="h-3.5 w-3.5" /> PASSED
               </span>
@@ -84,86 +83,86 @@ export function LaunchConsole() {
             )}
           </div>
 
-          {/* 4. Battery Umbra Buffer */}
+          {/* 4. Eclipse Battery Reserve */}
           <div className="flex items-center justify-between p-2 rounded-lg bg-slate-950/60 border border-slate-800/80">
             <span className="text-slate-400 flex items-center gap-1.5">
-              <Battery className="h-3.5 w-3.5 text-emerald-400" /> Battery Umbra
+              <Battery className="h-3.5 w-3.5 text-emerald-400" /> Eclipse Storage
             </span>
-            {isBatteryOk ? (
+            {telemetry.eclipseReady ? (
               <span className="text-emerald-400 flex items-center gap-1 text-[11px] font-semibold">
-                <CheckCircle2 className="h-3.5 w-3.5" /> READY
+                <CheckCircle2 className="h-3.5 w-3.5" /> PASSED
               </span>
             ) : (
-              <span className="text-amber-400 flex items-center gap-1 text-[11px] font-semibold">
-                <AlertTriangle className="h-3.5 w-3.5" /> UNREADY
+              <span className="text-rose-400 flex items-center gap-1 text-[11px] font-semibold">
+                <XCircle className="h-3.5 w-3.5" /> NO BATT
               </span>
             )}
           </div>
 
-          {/* 5. Comms Loop */}
+          {/* 5. Comms Downlink Margin */}
           <div className="flex items-center justify-between p-2 rounded-lg bg-slate-950/60 border border-slate-800/80">
             <span className="text-slate-400 flex items-center gap-1.5">
-              <Radio className="h-3.5 w-3.5 text-cyan-400" /> Comms Loop
+              <Radio className="h-3.5 w-3.5 text-cyan-400" /> Comms Link
             </span>
-            {isCommsOk ? (
+            {telemetry.commsBalanced ? (
               <span className="text-emerald-400 flex items-center gap-1 text-[11px] font-semibold">
-                <CheckCircle2 className="h-3.5 w-3.5" /> BALANCED
+                <CheckCircle2 className="h-3.5 w-3.5" /> PASSED
               </span>
             ) : (
-              <span className="text-amber-400 flex items-center gap-1 text-[11px] font-semibold">
-                <AlertTriangle className="h-3.5 w-3.5" /> OVERFLOW
+              <span className="text-rose-400 flex items-center gap-1 text-[11px] font-semibold">
+                <XCircle className="h-3.5 w-3.5" /> UNBAL
+              </span>
+            )}
+          </div>
+
+          {/* 6. Science Payload */}
+          <div className="flex items-center justify-between p-2 rounded-lg bg-slate-950/60 border border-slate-800/80">
+            <span className="text-slate-400 flex items-center gap-1.5">
+              <Camera className="h-3.5 w-3.5 text-pink-400" /> Science Payload
+            </span>
+            {telemetry.scienceReady ? (
+              <span className="text-emerald-400 flex items-center gap-1 text-[11px] font-semibold">
+                <CheckCircle2 className="h-3.5 w-3.5" /> PASSED
+              </span>
+            ) : (
+              <span className="text-rose-400 flex items-center gap-1 text-[11px] font-semibold">
+                <XCircle className="h-3.5 w-3.5" /> NEED PAYLOAD
               </span>
             )}
           </div>
         </div>
 
-        {/* Giant Launch Mission Button */}
-        <div className="mt-5 pt-4 border-t border-slate-800">
-          <button
-            onClick={launchMission}
-            className="w-full relative group overflow-hidden rounded-xl bg-gradient-to-r from-cyan-500 via-blue-600 to-indigo-600 p-[2px] transition-all duration-300 hover:shadow-xl hover:shadow-cyan-500/25 active:scale-[0.98]"
-          >
-            <div className="relative px-6 py-4 rounded-[10px] bg-slate-950 transition-colors group-hover:bg-opacity-80 flex items-center justify-center gap-2.5">
-              <Rocket className="h-5 w-5 text-cyan-400 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
-              <span className="font-mono text-sm font-black tracking-widest text-white uppercase">
-                Launch Mission
-              </span>
-            </div>
-          </button>
-          <p className="text-[10px] font-mono text-center text-slate-500 mt-2">
-            Executes NASA Systems Constraints Review
-          </p>
-        </div>
+        {/* Launch Button */}
+        <button
+          onClick={launchMission}
+          disabled={!isLaunchReady}
+          className={`w-full mt-4 py-3 px-4 rounded-xl font-mono text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 shadow-xl transition-all ${
+            isLaunchReady
+              ? "bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 shadow-emerald-500/30 cursor-pointer animate-pulse"
+              : "bg-slate-800 text-slate-500 border border-slate-700 cursor-not-allowed"
+          }`}
+        >
+          <Rocket className="h-4 w-4" />
+          <span>Launch & View Trajectory</span>
+        </button>
       </div>
 
-      {/* Subsystem Mass Distribution Card */}
-      <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-4 font-mono text-xs">
-        <div className="text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-2">
-          CubeSat Subsystem Allocations
+      {/* NASA Horizons Dataset Quick Card */}
+      <div className="bg-slate-900/60 border border-slate-800/70 rounded-xl p-3 font-mono text-[10px] text-slate-400 space-y-1">
+        <div className="text-cyan-400 font-bold uppercase tracking-wider">
+          NASA Horizons Dataset Quick-Look
         </div>
-        <div className="space-y-1.5 text-slate-400 text-[11px]">
-          <div className="flex justify-between">
-            <span>Photovoltaic Solar Arrays:</span>
-            <span className="text-slate-200">{telemetry.solarCount * 5} kg</span>
-          </div>
-          <div className="flex justify-between">
-            <span>EPS Battery Storage:</span>
-            <span className="text-slate-200">{telemetry.batteryCount * 10} kg</span>
-          </div>
-          <div className="flex justify-between">
-            <span>Ion Propulsion Modules:</span>
-            <span className="text-slate-200">
-              {grid.filter((g) => g?.id === "ion_thruster").length * 20} kg
-            </span>
-          </div>
-          <div className="flex justify-between">
-            <span>Multispectral Sensors:</span>
-            <span className="text-slate-200">{telemetry.payloadCount * 15} kg</span>
-          </div>
-          <div className="flex justify-between">
-            <span>High-Gain Telecomm:</span>
-            <span className="text-slate-200">{telemetry.antennaCount * 10} kg</span>
-          </div>
+        <div className="flex justify-between">
+          <span>Earth &mu;:</span>
+          <span className="text-slate-200">398,600 km&sup3;/s&sup2;</span>
+        </div>
+        <div className="flex justify-between">
+          <span>Escape Velocity (LEO):</span>
+          <span className="text-slate-200">11.18 km/s</span>
+        </div>
+        <div className="flex justify-between">
+          <span>Trans-Lunar &Delta;V Req:</span>
+          <span className="text-slate-200">3.12 km/s</span>
         </div>
       </div>
     </div>
