@@ -39,17 +39,20 @@ export function LaunchReviewModal({
       });
     }
 
+    const missionBudget = activeMission.budget_m;
+    const currentCost = telemetry.totalCostM;
+
     if (telemetry.budgetRemaining < 0) {
       errors.push(
-        `Budget ceiling breached by ${Math.abs(telemetry.budgetRemaining)} XP.`
+        `Budget ceiling breached by $${Math.abs(telemetry.budgetRemaining)}M.`
       );
       logs.push({
-        text: `FAIL: Cost ceiling breached (${telemetry.totalXP} XP / ${activeMission.budget_xp} XP).`,
+        text: `FAIL: Cost ceiling breached ($${currentCost}M / $${missionBudget}M).`,
         type: "fail",
       });
     } else {
       logs.push({
-        text: `PASS: Budget certified with ${telemetry.budgetRemaining} XP reserve.`,
+        text: `PASS: Budget certified with $${telemetry.budgetRemaining}M reserve.`,
         type: "pass",
       });
     }

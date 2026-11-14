@@ -164,7 +164,7 @@ export function MissionVizModal() {
                         telemetry.budget_m >= 0 ? "text-emerald-400" : "text-rose-400"
                       }`}
                     >
-                      {telemetry.budget_m} XP
+                      ${telemetry.budget_m}M
                     </div>
                     <span className="text-[9px] text-slate-500">Reserve Fund</span>
                   </div>

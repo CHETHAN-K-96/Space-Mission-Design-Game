@@ -11,9 +11,12 @@ interface CockpitHudProps {
   isFlying: boolean;
   blueprintVisible: boolean;
   fairingCutaway?: boolean;
+  blueprintMode?: "SATELLITE" | "FULL_VEHICLE" | "ROCKET";
   onMissionChange: (key: string) => void;
   onAutoBuild: () => void;
+  onEncloseFairing?: () => void;
   onToggleBlueprint: () => void;
+  onToggleBlueprintMode?: () => void;
   onToggleCutaway?: () => void;
   onLaunchReview: () => void;
   onCycleTime: () => void;
@@ -32,9 +35,12 @@ export function CockpitHud({
   isFlying,
   blueprintVisible,
   fairingCutaway = false,
+  blueprintMode = "FULL_VEHICLE",
   onMissionChange,
   onAutoBuild,
+  onEncloseFairing,
   onToggleBlueprint,
+  onToggleBlueprintMode,
   onToggleCutaway,
   onLaunchReview,
   onCycleTime,
@@ -44,20 +50,14 @@ export function CockpitHud({
   onToggleFlight,
   onClearCraft,
 }: CockpitHudProps) {
-  const maxBudget = activeMission.budget_m || activeMission.budget_xp || 100;
-  const budgetRatio = activeMission.budget_m
-    ? `$${telemetry.totalCostM || 0}M / $${activeMission.budget_m}M`
-    : `${telemetry.totalXP}/${activeMission.budget_xp} XP`;
-  const budgetVal = activeMission.budget_m
-    ? `${telemetry.budgetRemaining >= 0 ? `$${telemetry.budgetRemaining}M` : "OVER"}`
-    : `${telemetry.budgetRemaining >= 0 ? telemetry.budgetRemaining : "OVER"} XP`;
+  const maxBudget = activeMission.budget_m || 100;
+  const currentCost = telemetry.totalCostM ?? 0;
+  const budgetRatio = `$${currentCost}M / $${maxBudget}M`;
+  const budgetVal = telemetry.budgetRemaining >= 0
+    ? `$${telemetry.budgetRemaining}M`
+    : `-$${Math.abs(telemetry.budgetRemaining)}M OVER`;
   const budgetPct = Math.min(
-    Math.max(
-      (((activeMission.budget_m ? telemetry.totalCostM : telemetry.totalXP) || 0) /
-        maxBudget) *
-        100,
-      0
-    ),
+    Math.max((currentCost / maxBudget) * 100, 0),
     100
   );
   const budgetAlert = telemetry.budgetRemaining < 0;
@@ -92,16 +92,16 @@ export function CockpitHud({
             className="bg-slate-800 text-sky-400 border border-sky-600 px-2 py-1 rounded font-mono text-[11px] cursor-pointer outline-none"
           >
             <option value="artemis_lunar">
-              Artemis: Lunar Transfer Orbiter (100 XP)
+              Artemis: Lunar Transfer Orbiter ($600M)
             </option>
             <option value="earth_sentinel">
-              Earth Observation Sentinel (120 XP)
+              Earth Observation Sentinel ($90M)
             </option>
             <option value="asteroid_scout">
-              Deep Space Asteroid Scout (150 XP)
+              Deep Space Asteroid Scout ($180M)
             </option>
             <option value="space_telescope">
-              James Webb Space Observatory (180 XP)
+              James Webb Space Observatory ($350M)
             </option>
             <option value="sandbox_mode">⚙️ Custom Sandbox Mode</option>
           </select>
@@ -116,6 +116,15 @@ export function CockpitHud({
           >
             ✨ BUILD READY CRAFT
           </button>
+          {onEncloseFairing && (
+            <button
+              onClick={onEncloseFairing}
+              className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold border border-indigo-400 px-2.5 py-1 rounded text-[11px] transition-all shadow-sm flex items-center gap-1"
+              title="Enclose inner satellite payload inside aerodynamic fairing shroud"
+            >
+              🛰️ ENCLOSE IN FAIRING SHROUD
+            </button>
+          )}
           <button
             onClick={onToggleBlueprint}
             className={`px-2 py-1 rounded border text-[11px] transition-all font-semibold ${
@@ -127,16 +136,25 @@ export function CockpitHud({
           >
             📐 BLUEPRINT: {blueprintVisible ? "ON" : "OFF"} (B)
           </button>
+          {onToggleBlueprintMode && (
+            <button
+              onClick={onToggleBlueprintMode}
+              className="bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-cyan-500/60 px-2 py-1 rounded text-[11px] transition-all font-semibold"
+              title="Toggle between Inner Satellite and Full Rocket Launcher blueprint views"
+            >
+              📐 {blueprintMode === "SATELLITE" ? "INNER SATELLITE" : "FULL ROCKET LAUNCHER"}
+            </button>
+          )}
           <button
             onClick={onToggleCutaway}
             className={`px-2 py-1 rounded border text-[11px] transition-all font-semibold ${
               fairingCutaway
-                ? "border-sky-400 text-sky-400 bg-sky-950/40"
+                ? "border-sky-400 text-sky-400 bg-sky-950/60 shadow-sm shadow-sky-500/30"
                 : "border-purple-400 text-purple-300 bg-purple-950/40"
             }`}
             title="Toggle Fairing Shroud X-Ray Cutaway / Solid Hull (X)"
           >
-            👁️ SHROUD: {fairingCutaway ? "CUTAWAY" : "SOLID"} (X)
+            {fairingCutaway ? "👁️ FAIRING: CUTAWAY" : "👁️ FAIRING: SOLID"} (X)
           </button>
           <button
             onClick={onLaunchReview}
@@ -195,7 +213,7 @@ export function CockpitHud({
           }`}
         >
           <div className="flex justify-between text-[10px] text-slate-400">
-            <span>BUDGET (XP)</span>
+            <span>BUDGET ($M)</span>
             <span>{budgetRatio}</span>
           </div>
           <div className="text-sm font-bold text-slate-100 mt-0.5">

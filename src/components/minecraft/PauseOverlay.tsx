@@ -92,6 +92,7 @@ export function PauseOverlay({
           </div>
           <div>
             <span className="text-sky-400 font-bold">X:</span> Toggle Fairing Shroud (Cutaway / Solid) |{" "}
+            <span className="text-sky-400 font-bold">V:</span> Satellite / Rocket View |{" "}
             <span className="text-sky-400 font-bold">B:</span> Blueprint Guide
           </div>
           <div>

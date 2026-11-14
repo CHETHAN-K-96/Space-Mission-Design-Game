@@ -297,10 +297,10 @@ export function GameProvider({ children }: { children: ReactNode }) {
 
     // 1. Budget Check
     if (telemetry.budget_m < 0) {
-      errors.push(`Mission Abort: Over Budget by ${Math.abs(telemetry.budget_m)} XP.`);
-      logs.push(`FAIL: Cost ceiling breached. Allocated ${activeMission.initialBudget} XP, spent ${telemetry.spent_cost_m} XP.`);
+      errors.push(`Mission Abort: Over Budget by $${Math.abs(telemetry.budget_m)}M.`);
+      logs.push(`FAIL: Cost ceiling breached. Allocated $${activeMission.initialBudget}M, spent $${telemetry.spent_cost_m}M.`);
     } else {
-      logs.push(`PASS: Budget certified with ${telemetry.budget_m} XP reserve.`);
+      logs.push(`PASS: Budget certified with $${telemetry.budget_m}M reserve.`);
     }
 
     // 2. Thrust-to-Weight Check (Earth gravity lift)

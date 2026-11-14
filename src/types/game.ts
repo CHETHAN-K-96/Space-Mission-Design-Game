@@ -1,4 +1,15 @@
-export type SubsystemType = "EPS" | "STORAGE" | "PAYLOAD" | "COMMS" | "PROPULSION";
+export type SubsystemType =
+  | "EPS"
+  | "STORAGE"
+  | "PAYLOAD"
+  | "COMMS"
+  | "PROPULSION"
+  | "BUS"
+  | "AVIONICS"
+  | "ADCS"
+  | "THERMAL"
+  | "STRUCTURE"
+  | "ROCKET";
 
 export interface SpacecraftComponent {
   id: string;

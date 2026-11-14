@@ -55,7 +55,7 @@ export function MissionDossierModal({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <div className="bg-slate-950 border border-slate-800 p-2.5 rounded">
               <div>
-                <strong>Budget Cap:</strong> {mission.budget_xp} XP
+                <strong>Budget Cap:</strong> ${mission.budget_m ?? 100}M
               </div>
               <div className="mt-1">
                 <strong>Min Insertion Thrust:</strong> {mission.min_thrust_kn} kN

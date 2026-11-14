@@ -147,7 +147,7 @@ export function AssemblyGrid() {
                   <div className="absolute z-30 bottom-full mb-2 hidden group-hover:block w-48 p-2.5 bg-slate-950 text-slate-200 text-[10px] font-mono rounded-lg border border-slate-700 shadow-2xl pointer-events-none">
                     <p className="font-bold text-white mb-1">{slot.name}</p>
                     <div className="text-slate-400 space-y-0.5">
-                      <div>Mass: {slot.mass_kg} kg | Cost: {slot.cost_m} XP</div>
+                      <div>Mass: {slot.mass_kg} kg | Cost: ${slot.cost_m}M</div>
                       <div>
                         Power: {slot.power_w > 0 ? `+${slot.power_w}` : slot.power_w} W
                       </div>

@@ -8,10 +8,18 @@ import {
 } from "../../data/showcaseComponents";
 import { ShowcaseCard } from "./ShowcaseCard";
 
-type CategoryFilter = "ALL" | "PROPULSION" | "POWER" | "COMMS" | "PAYLOAD" | "BUS";
+type CategoryFilter =
+  | "ALL"
+  | "PROPULSION"
+  | "POWER"
+  | "COMMS"
+  | "PAYLOAD"
+  | "BUS"
+  | "ROCKET";
 
 const FILTER_TABS: { label: string; value: CategoryFilter }[] = [
   { label: "All Subsystems", value: "ALL" },
+  { label: "Rocket Stages", value: "ROCKET" },
   { label: "Propulsion & Engines", value: "PROPULSION" },
   { label: "Power & Solar (EPS)", value: "POWER" },
   { label: "Communications", value: "COMMS" },

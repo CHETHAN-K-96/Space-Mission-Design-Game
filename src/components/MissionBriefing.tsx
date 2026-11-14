@@ -56,7 +56,7 @@ export function MissionBriefing() {
 
           <div className="flex items-center justify-between py-1 border-b border-slate-800/40">
             <span className="text-slate-400">Budget Limit:</span>
-            <span className="text-amber-400 font-bold">{activeMission.initialBudget} XP</span>
+            <span className="text-amber-400 font-bold">${activeMission.initialBudget}M</span>
           </div>
 
           <div className="flex items-center justify-between py-1 border-b border-slate-800/40">

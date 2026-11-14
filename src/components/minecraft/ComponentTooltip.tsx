@@ -30,7 +30,7 @@ export function ComponentTooltip({ blockType }: ComponentTooltipProps) {
         <div className="bg-slate-950 border border-slate-800 p-1 rounded text-center">
           <span className="text-amber-400">Cost:</span>{" "}
           <strong className="text-white">
-            {def.cost_m ? `$${def.cost_m}M` : `${def.cost_xp} XP`}
+            ${def.cost_m ?? 0}M
           </strong>
         </div>
         <div className="bg-slate-950 border border-slate-800 p-1 rounded text-center">

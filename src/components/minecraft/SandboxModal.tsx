@@ -14,7 +14,7 @@ export function SandboxModal({
   onClose,
   onApply,
 }: SandboxModalProps) {
-  const [budget, setBudget] = useState(150);
+  const [budget, setBudget] = useState(300);
   const [thrust, setThrust] = useState(50);
   const [battery, setBattery] = useState(1);
   const [gravity, setGravity] = useState("1.0");
@@ -25,7 +25,7 @@ export function SandboxModal({
     const customMission: MissionDef = {
       name: "⚙️ Custom Engineering Sandbox",
       target: "Custom User Orbit",
-      budget_xp: budget,
+      budget_m: budget,
       min_thrust_kn: thrust,
       min_batteries: battery,
       min_payloads: 1,
@@ -60,13 +60,13 @@ export function SandboxModal({
         <div className="flex flex-col gap-3 text-xs text-slate-200">
           <div>
             <label className="flex justify-between mb-1">
-              <span>BUDGET CEILING (XP):</span>
-              <strong className="text-amber-400">{budget} XP</strong>
+              <span>BUDGET CEILING ($M):</span>
+              <strong className="text-amber-400">${budget}M</strong>
             </label>
             <input
               type="range"
-              min="40"
-              max="500"
+              min="50"
+              max="1000"
               step="10"
               value={budget}
               onChange={(e) => setBudget(parseInt(e.target.value, 10))}

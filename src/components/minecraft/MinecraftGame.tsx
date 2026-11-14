@@ -11,6 +11,7 @@ import {
 import { CockpitHud } from "./CockpitHud";
 import { Hotbar } from "./Hotbar";
 import { ComponentTooltip } from "./ComponentTooltip";
+import { WorldBlockHoverHud } from "./WorldBlockHoverHud";
 import { Crosshair } from "./Crosshair";
 import { NotificationToast } from "./NotificationToast";
 import { PauseOverlay } from "./PauseOverlay";
@@ -24,9 +25,8 @@ import { ResourcesModal } from "./ResourcesModal";
 
 const INITIAL_TELEMETRY: TelemetryData = {
   blocksCount: 0,
-  totalXP: 0,
   totalCostM: 0,
-  budgetRemaining: 145,
+  budgetRemaining: 600,
   totalMass: 0,
   powerGen: 0,
   powerDraw: 0,
@@ -54,6 +54,7 @@ export function MinecraftGame() {
   const [timeOfDay, setTimeOfDay] = useState<TimeOfDay>("DAY");
   const [isFlying, setIsFlying] = useState(true);
   const [blueprintVisible, setBlueprintVisible] = useState(true);
+  const [blueprintMode, setBlueprintMode] = useState<"SATELLITE" | "FULL_VEHICLE">("FULL_VEHICLE");
   const [fairingCutaway, setFairingCutaway] = useState(false);
   const [isLocked, setIsLocked] = useState(false);
   const [gameStarted, setGameStarted] = useState(false);
@@ -65,6 +66,10 @@ export function MinecraftGame() {
   ]);
   const [activeSlotIdx, setActiveSlotIdx] = useState(0);
   const [hoveredBlockType, setHoveredBlockType] = useState<number | null>(null);
+  const [hoveredWorldBlock, setHoveredWorldBlock] = useState<{
+    blockType: number;
+    worldPos?: [number, number, number];
+  } | null>(null);
 
   // Notification Toast
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -114,8 +119,19 @@ export function MinecraftGame() {
       onTimeChange: (time) => setTimeOfDay(time),
       onFlightModeChange: (flying) => setIsFlying(flying),
       onBlueprintChange: (visible) => setBlueprintVisible(visible),
+      onBlueprintModeChange: (mode) => setBlueprintMode(mode),
       onShroudChange: (cutaway) => setFairingCutaway(cutaway),
       onLockChange: (locked) => setIsLocked(locked),
+      onHoverBlock: (blockType, worldPos) => {
+        if (blockType !== null && (blockType < 17 || blockType > 22)) {
+          setHoveredWorldBlock({
+            blockType,
+            worldPos: worldPos ?? undefined,
+          });
+        } else {
+          setHoveredWorldBlock(null);
+        }
+      },
       onLaunchTelemetry: (alt, vel, stage) => {
         setLaunchTelem({
           isVisible: true,
@@ -255,6 +271,19 @@ export function MinecraftGame() {
     }
   };
 
+  const handleEncloseFairing = () => {
+    if (simRef.current) {
+      simRef.current.wrapWithFairingShroud();
+      showNotification("🛰️ Enclosed payload in aerodynamic fairing shroud!");
+    }
+  };
+
+  const handleToggleBlueprintMode = () => {
+    if (simRef.current) {
+      simRef.current.toggleBlueprintMode();
+    }
+  };
+
   const handleLaunchReview = () => {
     document.exitPointerLock?.();
     setShowLaunchReview(true);
@@ -311,6 +340,12 @@ export function MinecraftGame() {
       {/* Crosshair */}
       <Crosshair />
 
+      {/* Sleek 3D World Block Inspection HUD */}
+      <WorldBlockHoverHud
+        blockType={hoveredWorldBlock?.blockType ?? null}
+        worldPos={hoveredWorldBlock?.worldPos}
+      />
+
       {/* Top Telemetry Cockpit HUD */}
       <CockpitHud
         telemetry={telemetry}
@@ -319,10 +354,13 @@ export function MinecraftGame() {
         timeOfDay={timeOfDay}
         isFlying={isFlying}
         blueprintVisible={blueprintVisible}
+        blueprintMode={blueprintMode}
         fairingCutaway={fairingCutaway}
         onMissionChange={handleMissionChange}
         onAutoBuild={handleAutoBuild}
+        onEncloseFairing={handleEncloseFairing}
         onToggleBlueprint={handleToggleBlueprint}
+        onToggleBlueprintMode={handleToggleBlueprintMode}
         onToggleCutaway={handleToggleCutaway}
         onLaunchReview={handleLaunchReview}
         onCycleTime={handleCycleTime}

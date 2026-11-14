@@ -85,7 +85,7 @@ export function InventoryHotbar() {
               </span>
 
               <div className="mt-1 flex items-center gap-1.5 font-mono text-[10px] text-slate-400">
-                <span className="text-amber-400 font-semibold">{comp.cost_m} XP</span>
+                <span className="text-amber-400 font-semibold">${comp.cost_m}M</span>
                 <span>•</span>
                 <span>{comp.mass_kg} kg</span>
               </div>

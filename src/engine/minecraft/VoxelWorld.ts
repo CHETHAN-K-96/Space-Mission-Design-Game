@@ -49,6 +49,36 @@ export class VoxelWorld {
     this.updateBlockMesh(x, y, z);
   }
 
+  public isIndestructible(x: number, y: number, z: number): boolean {
+    if (y <= PAD_Y) return true;
+    const b = this.getBlock(x, y, z);
+    if (
+      b === BLOCKS.LAUNCH_PAD_STEEL ||
+      b === BLOCKS.GANTRY_TOWER ||
+      b === BLOCKS.CONCRETE_TILES ||
+      b === BLOCKS.HAZARD_STRIPE ||
+      b === BLOCKS.GRASS_PLAINS ||
+      b === BLOCKS.OCEAN_WATER
+    ) {
+      return true;
+    }
+    return false;
+  }
+
+  public isSpacecraftBlock(x: number, y: number, z: number): boolean {
+    if (y <= PAD_Y) return false;
+    const b = this.getBlock(x, y, z);
+    return (
+      b !== BLOCKS.AIR &&
+      b !== BLOCKS.LAUNCH_PAD_STEEL &&
+      b !== BLOCKS.GANTRY_TOWER &&
+      b !== BLOCKS.CONCRETE_TILES &&
+      b !== BLOCKS.HAZARD_STRIPE &&
+      b !== BLOCKS.GRASS_PLAINS &&
+      b !== BLOCKS.OCEAN_WATER
+    );
+  }
+
   public generateVABEnvironment() {
     this.data.fill(0);
 
@@ -180,7 +210,9 @@ export class VoxelWorld {
             b !== BLOCKS.GANTRY_TOWER &&
             b !== BLOCKS.LAUNCH_PAD_STEEL &&
             b !== BLOCKS.HAZARD_STRIPE &&
-            b !== BLOCKS.CONCRETE_TILES
+            b !== BLOCKS.CONCRETE_TILES &&
+            b !== BLOCKS.GRASS_PLAINS &&
+            b !== BLOCKS.OCEAN_WATER
           ) {
             blocks.push({ x, y, z, type: b });
           }

@@ -523,26 +523,6 @@ export const VoxelModelFactory = {
       bandGeo.translate(0, 0.2, 0);
       group.add(new THREE.Mesh(bandGeo, bandMat));
 
-      const satCoreGeo = new THREE.BoxGeometry(0.42, 0.52, 0.42);
-      const satCoreMat = new THREE.MeshStandardMaterial({
-        color: 0xf59e0b,
-        metalness: 0.85,
-        roughness: 0.2,
-      });
-      const satCore = new THREE.Mesh(satCoreGeo, satCoreMat);
-      satCore.position.y = 0;
-      group.add(satCore);
-
-      const foldGeo = new THREE.BoxGeometry(0.04, 0.48, 0.36);
-      const foldMat = new THREE.MeshStandardMaterial({
-        color: 0x0284c7,
-        metalness: 0.7,
-      });
-      const foldL = new THREE.Mesh(foldGeo, foldMat);
-      foldL.position.set(-0.28, 0, 0);
-      const foldR = new THREE.Mesh(foldGeo, foldMat);
-      foldR.position.set(0.28, 0, 0);
-      group.add(foldL, foldR);
       return group;
     }
 

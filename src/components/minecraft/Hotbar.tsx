@@ -69,7 +69,7 @@ export function Hotbar({
               {/* Cost badge */}
               {def && (
                 <span className="absolute bottom-0.5 right-1 text-[8px] text-amber-400 font-bold">
-                  {def.cost_m ? `$${def.cost_m}M` : `${def.cost_xp}XP`}
+                  ${def.cost_m ?? 0}M
                 </span>
               )}
             </div>

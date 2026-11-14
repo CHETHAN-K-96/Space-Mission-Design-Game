@@ -4,8 +4,7 @@ export interface ComponentDef {
   name: string;
   subsystem: string;
   category: "POWER" | "PROPULSION" | "SCIENCE" | "COMMS" | "ROCKET";
-  cost_xp?: number;
-  cost_m?: number;
+  cost_m: number;
   mass_kg: number;
   power_w: number;
   thrust_kn: number;
@@ -20,8 +19,7 @@ export interface ComponentDef {
 export interface MissionDef {
   name: string;
   target: string;
-  budget_xp: number;
-  budget_m?: number;
+  budget_m: number;
   min_thrust_kn: number;
   min_batteries: number;
   min_payloads: number;
@@ -34,8 +32,7 @@ export interface MissionDef {
 
 export interface TelemetryData {
   blocksCount: number;
-  totalXP: number;
-  totalCostM?: number;
+  totalCostM: number;
   budgetRemaining: number;
   totalMass: number;
   powerGen: number;

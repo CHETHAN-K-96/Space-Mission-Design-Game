@@ -122,10 +122,10 @@ export function TelemetryHud() {
               <span className="flex items-center gap-1 font-semibold">
                 <Coins className="h-3 w-3 text-amber-400" /> BUDGET
               </span>
-              <span>{telemetry.budget_m}/{activeMission.initialBudget} XP</span>
+              <span>${telemetry.budget_m}M / ${activeMission.initialBudget}M</span>
             </div>
             <div className="text-sm font-bold mt-0.5">
-              {telemetry.budget_m >= 0 ? `${telemetry.budget_m} XP` : "OVERBUDGET"}
+              {telemetry.budget_m >= 0 ? `$${telemetry.budget_m}M` : "OVERBUDGET"}
             </div>
             <div className="w-full bg-slate-800/80 h-1.5 rounded-full mt-1.5 overflow-hidden">
               <div
