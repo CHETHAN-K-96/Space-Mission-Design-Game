@@ -8,6 +8,7 @@ import { AssemblyGrid } from "../components/AssemblyGrid";
 import { InventoryHotbar } from "../components/InventoryHotbar";
 import { LaunchConsole } from "../components/LaunchConsole";
 import { MissionVizModal } from "../components/MissionVizModal";
+import { ComprehensiveResourceModal } from "../components/ComprehensiveResourceModal";
 import { COMPONENT_CATALOG } from "../data/components";
 import { ComponentIcon } from "../components/AssemblyGrid";
 import { Database, BookOpen, X } from "lucide-react";
@@ -159,7 +160,7 @@ function MainContent() {
 
       {/* Modals */}
       <MissionVizModal />
-      <DatasetModal />
+      <ComprehensiveResourceModal />
       <GuideModal />
     </div>
   );
