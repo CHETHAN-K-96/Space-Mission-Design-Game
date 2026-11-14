@@ -25,6 +25,7 @@ export interface SimulatorCallbacks {
   onDevStageChange?: (stage: DevStage) => void;
   onShroudChange?: (cutaway: boolean) => void;
   onLockChange?: (locked: boolean) => void;
+  onCountdown?: (count: number | null) => void;
   onLaunchTelemetry?: (
     alt: string,
     vel: string,
@@ -337,13 +338,13 @@ export class SpacecraftSimulator {
       this.hotbarSlots = [...this.stage1Hotbar];
       this.setBlueprintMode("FULL_VEHICLE");
       this.callbacks.onNotification?.(
-        "🚀 STAGE 1 ACTIVE: ROCKET LAUNCH VEHICLE BUILDER (EASY)\nBuild rocket engines, tanks, and top satellite payload container."
+        "STAGE 1 ACTIVE: ROCKET LAUNCH VEHICLE BUILDER\nBuild rocket engines, tanks, and top satellite payload container."
       );
     } else {
       this.hotbarSlots = [...this.stage2Hotbar];
       this.setBlueprintMode("SATELLITE");
       this.callbacks.onNotification?.(
-        "🛰️ STAGE 2 ACTIVE: SATELLITE PAYLOAD INTEGRATION (INTERMEDIATE)\nInstall solar wings, scientific instruments, batteries, and communications."
+        "STAGE 2 ACTIVE: SATELLITE PAYLOAD INTEGRATION\nInstall solar wings, scientific instruments, batteries, and communications."
       );
     }
     this.callbacks.onDevStageChange?.(stage);
@@ -398,8 +399,8 @@ export class SpacecraftSimulator {
     this.callbacks.onNotification?.(
       `Fairing Shroud Mode: ${
         this.fairingCutaway
-          ? "👁️ X-RAY CUTAWAY (Inner Satellite Instruments Visible)"
-          : "🛡️ SOLID AERODYNAMIC ROCKET SHROUD"
+          ? "CUTAWAY (Inner Satellite Instruments Visible)"
+          : "SOLID AERODYNAMIC ROCKET SHROUD"
       }`
     );
     return this.fairingCutaway;
@@ -412,8 +413,8 @@ export class SpacecraftSimulator {
     this.callbacks.onNotification?.(
       `Blueprint Mode: ${
         mode === "SATELLITE"
-          ? "🛰️ INNER SATELLITE CORE"
-          : "🚀 COMPLETE LAUNCH VEHICLE"
+          ? "INNER SATELLITE CORE"
+          : "COMPLETE LAUNCH VEHICLE"
       }`
     );
   }
@@ -438,126 +439,65 @@ export class SpacecraftSimulator {
     let shroudTargets: { x: number; y: number; z: number; type: number }[] = [];
 
     if (missionKey === "earth_sentinel") {
-      // Falcon 9 2-Stage Rocket
+      // Falcon 9 2-Stage Rocket Clean Outer Stack
       rocketTargets = [
         { x: cx, y: cy, z: cz, type: BLOCKS.MERLIN_CLUSTER },
         { x: cx, y: cy + 1, z: cz, type: BLOCKS.LIQUID_FUEL_TANK },
-        { x: cx + 1, y: cy + 1, z: cz, type: BLOCKS.GRID_FIN },
-        { x: cx - 1, y: cy + 1, z: cz, type: BLOCKS.GRID_FIN },
         { x: cx, y: cy + 2, z: cz, type: BLOCKS.LIQUID_FUEL_TANK },
         { x: cx, y: cy + 3, z: cz, type: BLOCKS.INTERSTAGE_RING },
         { x: cx, y: cy + 4, z: cz, type: BLOCKS.VACUUM_ENGINE },
         { x: cx, y: cy + 5, z: cz, type: BLOCKS.UPPER_STAGE_TANK },
-        { x: cx, y: cy + 6, z: cz, type: BLOCKS.PAYLOAD_ADAPTER },
+        { x: cx, y: cy + 6, z: cz, type: BLOCKS.SAT_PAYLOAD_CONTAINER },
+        { x: cx, y: cy + 7, z: cz, type: BLOCKS.PAYLOAD_FAIRING },
       ];
-      // Inner Earth Sentinel Satellite
       satelliteTargets = [
-        { x: cx, y: cy + 7, z: cz, type: BLOCKS.BUS_FRAME },
-        { x: cx, y: cy + 7, z: cz - 1, type: BLOCKS.REACTION_WHEEL },
-        { x: cx, y: cy + 8, z: cz, type: BLOCKS.AVIONICS_C_DH },
-        { x: cx, y: cy + 8, z: cz + 1, type: BLOCKS.BATTERY_PACK },
-        { x: cx, y: cy + 8, z: cz - 1, type: BLOCKS.HIGH_GAIN_DISH },
-        { x: cx, y: cy + 9, z: cz + 1, type: BLOCKS.SOLAR_ARRAY },
-        { x: cx, y: cy + 9, z: cz, type: BLOCKS.MULTISPECTRAL_CAM },
+        { x: cx, y: cy + 6, z: cz, type: BLOCKS.SAT_PAYLOAD_CONTAINER },
       ];
-      // Surrounding Rocket Shroud Envelope & Fairing
-      shroudTargets = [
-        { x: cx + 1, y: cy + 7, z: cz, type: BLOCKS.ROCKET_BODY_SHROUD },
-        { x: cx - 1, y: cy + 7, z: cz, type: BLOCKS.ROCKET_BODY_SHROUD },
-        { x: cx + 1, y: cy + 8, z: cz, type: BLOCKS.ROCKET_BODY_SHROUD },
-        { x: cx - 1, y: cy + 8, z: cz, type: BLOCKS.ROCKET_BODY_SHROUD },
-        { x: cx + 1, y: cy + 9, z: cz, type: BLOCKS.ROCKET_BODY_SHROUD },
-        { x: cx - 1, y: cy + 9, z: cz, type: BLOCKS.ROCKET_BODY_SHROUD },
-        { x: cx, y: cy + 10, z: cz, type: BLOCKS.PAYLOAD_FAIRING },
-      ];
+      shroudTargets = [];
     } else if (missionKey === "asteroid_scout") {
-      // Falcon Heavy Booster & Core Architecture
+      // Falcon Heavy / High-Thrust Booster Outer Stack
       rocketTargets = [
         { x: cx, y: cy, z: cz, type: BLOCKS.MERLIN_CLUSTER },
         { x: cx + 1, y: cy, z: cz, type: BLOCKS.SOLID_BOOSTER },
         { x: cx - 1, y: cy, z: cz, type: BLOCKS.SOLID_BOOSTER },
-        { x: cx + 1, y: cy + 1, z: cz, type: BLOCKS.SOLID_BOOSTER },
-        { x: cx - 1, y: cy + 1, z: cz, type: BLOCKS.SOLID_BOOSTER },
-        { x: cx + 1, y: cy + 2, z: cz, type: BLOCKS.PAYLOAD_FAIRING },
-        { x: cx - 1, y: cy + 2, z: cz, type: BLOCKS.PAYLOAD_FAIRING },
+        { x: cx + 1, y: cy + 1, z: cz, type: BLOCKS.PAYLOAD_FAIRING },
+        { x: cx - 1, y: cy + 1, z: cz, type: BLOCKS.PAYLOAD_FAIRING },
         { x: cx, y: cy + 1, z: cz, type: BLOCKS.LIQUID_FUEL_TANK },
         { x: cx, y: cy + 2, z: cz, type: BLOCKS.LIQUID_FUEL_TANK },
-        { x: cx, y: cy + 3, z: cz, type: BLOCKS.INTERSTAGE_RING },
-        { x: cx, y: cy + 4, z: cz, type: BLOCKS.VACUUM_ENGINE },
-        { x: cx, y: cy + 5, z: cz, type: BLOCKS.UPPER_STAGE_TANK },
-        { x: cx, y: cy + 6, z: cz, type: BLOCKS.DOCKING_PORT },
+        { x: cx, y: cy + 3, z: cz, type: BLOCKS.LIQUID_FUEL_TANK },
+        { x: cx, y: cy + 4, z: cz, type: BLOCKS.INTERSTAGE_RING },
+        { x: cx, y: cy + 5, z: cz, type: BLOCKS.VACUUM_ENGINE },
+        { x: cx, y: cy + 6, z: cz, type: BLOCKS.UPPER_STAGE_TANK },
+        { x: cx, y: cy + 7, z: cz, type: BLOCKS.SAT_PAYLOAD_CONTAINER },
+        { x: cx, y: cy + 8, z: cz, type: BLOCKS.PAYLOAD_FAIRING },
       ];
-      // Inner Psyche Deep Space Probe
       satelliteTargets = [
-        { x: cx, y: cy + 7, z: cz, type: BLOCKS.BUS_FRAME },
-        { x: cx, y: cy + 7, z: cz - 1, type: BLOCKS.ION_THRUSTER },
-        { x: cx, y: cy + 8, z: cz, type: BLOCKS.AVIONICS_C_DH },
-        { x: cx, y: cy + 8, z: cz + 1, type: BLOCKS.BATTERY_PACK },
-        { x: cx, y: cy + 8, z: cz - 1, type: BLOCKS.BATTERY_PACK },
-        { x: cx, y: cy + 9, z: cz, type: BLOCKS.REACTION_WHEEL },
-        { x: cx, y: cy + 9, z: cz - 1, type: BLOCKS.HIGH_GAIN_DISH },
-        { x: cx, y: cy + 9, z: cz + 1, type: BLOCKS.PATCH_ANTENNA },
-        { x: cx, y: cy + 10, z: cz, type: BLOCKS.SPECTROMETER_IR },
-        { x: cx, y: cy + 10, z: cz - 1, type: BLOCKS.MAGNETOMETER },
-        { x: cx, y: cy + 10, z: cz + 1, type: BLOCKS.SOLAR_WING },
+        { x: cx, y: cy + 7, z: cz, type: BLOCKS.SAT_PAYLOAD_CONTAINER },
       ];
-      // Shroud
-      shroudTargets = [
-        { x: cx + 1, y: cy + 7, z: cz, type: BLOCKS.ROCKET_BODY_SHROUD },
-        { x: cx - 1, y: cy + 7, z: cz, type: BLOCKS.ROCKET_BODY_SHROUD },
-        { x: cx + 1, y: cy + 8, z: cz, type: BLOCKS.ROCKET_BODY_SHROUD },
-        { x: cx - 1, y: cy + 8, z: cz, type: BLOCKS.ROCKET_BODY_SHROUD },
-        { x: cx + 1, y: cy + 9, z: cz, type: BLOCKS.ROCKET_BODY_SHROUD },
-        { x: cx - 1, y: cy + 9, z: cz, type: BLOCKS.ROCKET_BODY_SHROUD },
-        { x: cx + 1, y: cy + 10, z: cz, type: BLOCKS.ROCKET_BODY_SHROUD },
-        { x: cx - 1, y: cy + 10, z: cz, type: BLOCKS.ROCKET_BODY_SHROUD },
-        { x: cx, y: cy + 11, z: cz, type: BLOCKS.PAYLOAD_FAIRING },
-      ];
+      shroudTargets = [];
     } else if (missionKey === "space_telescope") {
-      // SLS Heavy Space Telescope Launcher
+      // SLS Heavy Space Telescope Launcher Outer Stack
       rocketTargets = [
         { x: cx, y: cy, z: cz, type: BLOCKS.RS25_ENGINE },
         { x: cx + 1, y: cy, z: cz, type: BLOCKS.SOLID_BOOSTER },
         { x: cx - 1, y: cy, z: cz, type: BLOCKS.SOLID_BOOSTER },
-        { x: cx + 1, y: cy + 1, z: cz, type: BLOCKS.SOLID_BOOSTER },
-        { x: cx - 1, y: cy + 1, z: cz, type: BLOCKS.SOLID_BOOSTER },
-        { x: cx + 1, y: cy + 2, z: cz, type: BLOCKS.PAYLOAD_FAIRING },
-        { x: cx - 1, y: cy + 2, z: cz, type: BLOCKS.PAYLOAD_FAIRING },
+        { x: cx + 1, y: cy + 1, z: cz, type: BLOCKS.PAYLOAD_FAIRING },
+        { x: cx - 1, y: cy + 1, z: cz, type: BLOCKS.PAYLOAD_FAIRING },
         { x: cx, y: cy + 1, z: cz, type: BLOCKS.CRYOGENIC_TANK },
         { x: cx, y: cy + 2, z: cz, type: BLOCKS.CRYOGENIC_TANK },
-        { x: cx, y: cy + 3, z: cz, type: BLOCKS.INTERSTAGE_RING },
-        { x: cx, y: cy + 4, z: cz, type: BLOCKS.VACUUM_ENGINE },
-        { x: cx, y: cy + 5, z: cz, type: BLOCKS.UPPER_STAGE_TANK },
-        { x: cx, y: cy + 6, z: cz, type: BLOCKS.PAYLOAD_ADAPTER },
+        { x: cx, y: cy + 3, z: cz, type: BLOCKS.CRYOGENIC_TANK },
+        { x: cx, y: cy + 4, z: cz, type: BLOCKS.INTERSTAGE_RING },
+        { x: cx, y: cy + 5, z: cz, type: BLOCKS.VACUUM_ENGINE },
+        { x: cx, y: cy + 6, z: cz, type: BLOCKS.UPPER_STAGE_TANK },
+        { x: cx, y: cy + 7, z: cz, type: BLOCKS.SAT_PAYLOAD_CONTAINER },
+        { x: cx, y: cy + 8, z: cz, type: BLOCKS.PAYLOAD_FAIRING },
       ];
-      // Inner James Webb Space Telescope Payload
       satelliteTargets = [
-        { x: cx, y: cy + 7, z: cz, type: BLOCKS.BUS_FRAME },
-        { x: cx, y: cy + 7, z: cz - 1, type: BLOCKS.REACTION_WHEEL },
-        { x: cx, y: cy + 8, z: cz, type: BLOCKS.AVIONICS_C_DH },
-        { x: cx, y: cy + 8, z: cz + 1, type: BLOCKS.BATTERY_PACK },
-        { x: cx, y: cy + 8, z: cz - 1, type: BLOCKS.BATTERY_PACK },
-        { x: cx, y: cy + 9, z: cz, type: BLOCKS.HIGH_GAIN_DISH },
-        { x: cx, y: cy + 9, z: cz + 1, type: BLOCKS.SOLAR_WING },
-        { x: cx, y: cy + 9, z: cz - 1, type: BLOCKS.RADIATOR_PANEL },
-        { x: cx, y: cy + 10, z: cz, type: BLOCKS.MULTISPECTRAL_CAM },
-        { x: cx, y: cy + 10, z: cz - 1, type: BLOCKS.SPECTROMETER_IR },
-        { x: cx, y: cy + 10, z: cz + 1, type: BLOCKS.HIGH_GAIN_DISH },
+        { x: cx, y: cy + 7, z: cz, type: BLOCKS.SAT_PAYLOAD_CONTAINER },
       ];
-      // Shroud
-      shroudTargets = [
-        { x: cx + 1, y: cy + 7, z: cz, type: BLOCKS.ROCKET_BODY_SHROUD },
-        { x: cx - 1, y: cy + 7, z: cz, type: BLOCKS.ROCKET_BODY_SHROUD },
-        { x: cx + 1, y: cy + 8, z: cz, type: BLOCKS.ROCKET_BODY_SHROUD },
-        { x: cx - 1, y: cy + 8, z: cz, type: BLOCKS.ROCKET_BODY_SHROUD },
-        { x: cx + 1, y: cy + 9, z: cz, type: BLOCKS.ROCKET_BODY_SHROUD },
-        { x: cx - 1, y: cy + 9, z: cz, type: BLOCKS.ROCKET_BODY_SHROUD },
-        { x: cx + 1, y: cy + 10, z: cz, type: BLOCKS.ROCKET_BODY_SHROUD },
-        { x: cx - 1, y: cy + 10, z: cz, type: BLOCKS.ROCKET_BODY_SHROUD },
-        { x: cx, y: cy + 11, z: cz, type: BLOCKS.PAYLOAD_FAIRING },
-      ];
+      shroudTargets = [];
     } else {
-      // Artemis III Lunar Mission
+      // Artemis III Lunar Super Heavy Outer Stack
       rocketTargets = [
         { x: cx, y: cy, z: cz, type: BLOCKS.RS25_ENGINE },
         { x: cx + 1, y: cy, z: cz, type: BLOCKS.SOLID_BOOSTER },
@@ -568,32 +508,18 @@ export class SpacecraftSimulator {
         { x: cx - 1, y: cy + 2, z: cz, type: BLOCKS.PAYLOAD_FAIRING },
         { x: cx, y: cy + 1, z: cz, type: BLOCKS.CRYOGENIC_TANK },
         { x: cx, y: cy + 2, z: cz, type: BLOCKS.CRYOGENIC_TANK },
-        { x: cx, y: cy + 3, z: cz, type: BLOCKS.INTERSTAGE_RING },
-        { x: cx, y: cy + 4, z: cz, type: BLOCKS.VACUUM_ENGINE },
-        { x: cx, y: cy + 5, z: cz, type: BLOCKS.UPPER_STAGE_TANK },
-        { x: cx, y: cy + 6, z: cz, type: BLOCKS.DOCKING_PORT },
+        { x: cx, y: cy + 3, z: cz, type: BLOCKS.CRYOGENIC_TANK },
+        { x: cx, y: cy + 4, z: cz, type: BLOCKS.CRYOGENIC_TANK },
+        { x: cx, y: cy + 5, z: cz, type: BLOCKS.INTERSTAGE_RING },
+        { x: cx, y: cy + 6, z: cz, type: BLOCKS.VACUUM_ENGINE },
+        { x: cx, y: cy + 7, z: cz, type: BLOCKS.UPPER_STAGE_TANK },
+        { x: cx, y: cy + 8, z: cz, type: BLOCKS.SAT_PAYLOAD_CONTAINER },
+        { x: cx, y: cy + 9, z: cz, type: BLOCKS.PAYLOAD_FAIRING },
       ];
-      // Inner Orion / Lunar Vehicle Spacecraft
       satelliteTargets = [
-        { x: cx, y: cy + 7, z: cz, type: BLOCKS.BUS_FRAME },
-        { x: cx, y: cy + 7, z: cz - 1, type: BLOCKS.RCS_THRUSTER },
-        { x: cx, y: cy + 8, z: cz, type: BLOCKS.AVIONICS_C_DH },
-        { x: cx, y: cy + 8, z: cz + 1, type: BLOCKS.BATTERY_PACK },
-        { x: cx, y: cy + 8, z: cz - 1, type: BLOCKS.REACTION_WHEEL },
-        { x: cx, y: cy + 9, z: cz, type: BLOCKS.RADAR_SAR },
-        { x: cx, y: cy + 9, z: cz + 1, type: BLOCKS.SOLAR_WING },
-        { x: cx, y: cy + 9, z: cz - 1, type: BLOCKS.HIGH_GAIN_DISH },
+        { x: cx, y: cy + 8, z: cz, type: BLOCKS.SAT_PAYLOAD_CONTAINER },
       ];
-      // Shroud
-      shroudTargets = [
-        { x: cx + 1, y: cy + 7, z: cz, type: BLOCKS.ROCKET_BODY_SHROUD },
-        { x: cx - 1, y: cy + 7, z: cz, type: BLOCKS.ROCKET_BODY_SHROUD },
-        { x: cx + 1, y: cy + 8, z: cz, type: BLOCKS.ROCKET_BODY_SHROUD },
-        { x: cx - 1, y: cy + 8, z: cz, type: BLOCKS.ROCKET_BODY_SHROUD },
-        { x: cx + 1, y: cy + 9, z: cz, type: BLOCKS.ROCKET_BODY_SHROUD },
-        { x: cx - 1, y: cy + 9, z: cz, type: BLOCKS.ROCKET_BODY_SHROUD },
-        { x: cx, y: cy + 10, z: cz, type: BLOCKS.PAYLOAD_FAIRING },
-      ];
+      shroudTargets = [];
     }
 
     return { rocketTargets, satelliteTargets, shroudTargets };
@@ -636,7 +562,7 @@ export class SpacecraftSimulator {
     soundEngine.playPlace();
     this.triggerHUDUpdate();
     this.callbacks.onNotification?.(
-      "🛰️ Spacecraft successfully enclosed within Aerodynamic Fairing Shroud!"
+      "Spacecraft successfully enclosed within Aerodynamic Fairing Shroud!"
     );
     return true;
   }
@@ -729,77 +655,122 @@ export class SpacecraftSimulator {
     });
   }
 
+  public isCountdown: boolean = false;
+
   public startLaunchSequence() {
-    this.isLaunching = true;
-    this.launchAscentY = 0;
-    this.launchTimeSec = 0;
-    this.launchStageName = "PAD_IGNITION";
+    if (this.isLaunching || this.isCountdown) return;
 
-    soundEngine.playLaunchRumble();
-    this.callbacks.onNotification?.(
-      "🚀 T-00:00: MAIN ENGINE IGNITION! ROCKET ASCENDING THROUGH THE ATMOSPHERE!"
-    );
+    this.isCountdown = true;
+    this.launchStageName = "COUNTDOWN";
 
-    confetti({ particleCount: 160, spread: 90, origin: { y: 0.6 } });
+    // Set clear hero pre-ignition camera position looking North along South crawlerway
+    this.camera.position.set(PAD_X, PAD_Y + 1.8, PAD_Z - 15);
+    this.camera.lookAt(PAD_X, PAD_Y + 3.5, PAD_Z);
 
-    // Stage 1: Liftoff & Max-Q
+    // T-3
+    this.callbacks.onCountdown?.(3);
+    this.callbacks.onNotification?.("T-03: TERMINAL COUNTDOWN. FLIGHT COMPUTER AUTONOMOUS.");
+    soundEngine.playPlace();
+
+    // T-2
     setTimeout(() => {
       if (this.isDestroyed) return;
-      this.launchStageName = "MAX_Q_TRANSONIC";
-      this.callbacks.onNotification?.(
-        "T+00:45: VEHICLE PASSING THROUGH MAX-Q DYNAMIC PRESSURE (MACH 1.4)!"
-      );
-    }, 2500);
+      this.callbacks.onCountdown?.(2);
+      this.callbacks.onNotification?.("T-02: ENGINE RECIRCULATION CHILL & TURBOPUMP SPIN-UP.");
+    }, 1000);
 
-    // Stage 2: Stage Separation (MECO)
+    // T-1
     setTimeout(() => {
       if (this.isDestroyed) return;
-      this.launchStageName = "STAGE_SEPARATION";
-      this.callbacks.onNotification?.(
-        "T+02:20: MECO CONFIRMED! FIRST STAGE SEPARATED! VACUUM UPPER ENGINE IGNITED!"
-      );
-      this.setTimeOfDay("SUNSET");
-    }, 5000);
+      this.callbacks.onCountdown?.(1);
+      this.callbacks.onNotification?.("T-01: MAIN ENGINE IGNITION! PAD SOUND SUPPRESSION ACTIVE!");
+      // Spool pre-ignition smoke at pad
+      for (let i = 0; i < 20; i++) {
+        this.spawnExhaustPlume();
+      }
+    }, 2000);
 
-    // Stage 3: Fairing Jettison (Atmospheric Exit)
+    // T-0: LIFTOFF!
     setTimeout(() => {
       if (this.isDestroyed) return;
-      this.launchStageName = "FAIRING_JETTISON";
+      this.isCountdown = false;
+      this.isLaunching = true;
+      this.launchAscentY = 0;
+      this.launchTimeSec = 0;
+      this.launchStageName = "LIFTOFF";
+
+      soundEngine.playLaunchRumble();
+      this.callbacks.onCountdown?.(0);
       this.callbacks.onNotification?.(
-        "T+03:15: PAYLOAD FAIRING JETTISONED! SATELLITE EXPOSED TO SPACE VACUUM!"
+        "T+00:00: LIFTOFF! THE ROCKET HAS CLEARED THE LAUNCH COMPLEX!"
       );
-      this.setTimeOfDay("NIGHT");
-      [BLOCKS.ROCKET_BODY_SHROUD, BLOCKS.PAYLOAD_FAIRING].forEach((bType) => {
-        const mat = MATERIALS[bType];
-        if (mat) {
-          mat.transparent = true;
-          mat.opacity = 0.2;
-          mat.depthWrite = false;
-          mat.needsUpdate = true;
+
+      confetti({ particleCount: 160, spread: 90, origin: { y: 0.6 } });
+
+      // Dismiss countdown badge shortly after liftoff
+      setTimeout(() => {
+        if (!this.isDestroyed) {
+          this.callbacks.onCountdown?.(null);
         }
-      });
-      this.world.rebuildMeshes();
-    }, 7500);
+      }, 1200);
 
-    // Stage 4: Orbital Insertion
-    setTimeout(() => {
-      if (this.isDestroyed) return;
-      this.launchStageName = "ORBITAL_INSERTION";
-      this.callbacks.onNotification?.(
-        "T+04:30: ORBITAL INSERTION ACHIEVED! SATELLITE PAYLOAD ONLINE IN TARGET ORBIT!"
-      );
-      confetti({ particleCount: 220, spread: 130, origin: { y: 0.5 } });
-    }, 10000);
+      // Stage 1: Liftoff & Max-Q
+      setTimeout(() => {
+        if (this.isDestroyed) return;
+        this.launchStageName = "MAX_Q_TRANSONIC";
+        this.callbacks.onNotification?.(
+          "T+00:45: VEHICLE PASSING THROUGH MAX-Q DYNAMIC PRESSURE (MACH 1.4)!"
+        );
+      }, 3500);
 
-    // Finish
-    setTimeout(() => {
-      if (this.isDestroyed) return;
-      this.isLaunching = false;
-      this.callbacks.onLaunchFinish?.();
-      this.callbacks.onNotification?.(
-        "MISSION SUCCESS: 100% FLIGHT READINESS OBJECTIVES ACHIEVED!"
-      );
-    }, 13000);
+      // Stage 2: Stage Separation (MECO)
+      setTimeout(() => {
+        if (this.isDestroyed) return;
+        this.launchStageName = "STAGE_SEPARATION";
+        this.callbacks.onNotification?.(
+          "T+02:20: MECO CONFIRMED! FIRST STAGE SEPARATED! VACUUM UPPER ENGINE IGNITED!"
+        );
+      }, 6500);
+
+      // Stage 3: Fairing Jettison (Atmospheric Exit)
+      setTimeout(() => {
+        if (this.isDestroyed) return;
+        this.launchStageName = "FAIRING_JETTISON";
+        this.callbacks.onNotification?.(
+          "T+03:15: PAYLOAD FAIRING JETTISONED! SATELLITE EXPOSED TO SPACE VACUUM!"
+        );
+        [BLOCKS.ROCKET_BODY_SHROUD, BLOCKS.PAYLOAD_FAIRING, BLOCKS.SAT_PAYLOAD_CONTAINER].forEach((bType) => {
+          const mat = MATERIALS[bType];
+          if (mat) {
+            mat.transparent = true;
+            mat.opacity = 0.2;
+            mat.depthWrite = false;
+            mat.needsUpdate = true;
+          }
+        });
+        this.world.rebuildMeshes();
+      }, 9500);
+
+      // Stage 4: Orbital Insertion
+      setTimeout(() => {
+        if (this.isDestroyed) return;
+        this.launchStageName = "ORBITAL_INSERTION";
+        this.callbacks.onNotification?.(
+          "T+04:30: ORBITAL INSERTION ACHIEVED! SATELLITE PAYLOAD ONLINE IN TARGET ORBIT!"
+        );
+        confetti({ particleCount: 220, spread: 130, origin: { y: 0.5 } });
+      }, 12000);
+
+      // Finish
+      setTimeout(() => {
+        if (this.isDestroyed) return;
+        this.isLaunching = false;
+        this.callbacks.onLaunchFinish?.();
+        this.callbacks.onNotification?.(
+          "MISSION SUCCESS: 100% FLIGHT READINESS OBJECTIVES ACHIEVED!"
+        );
+      }, 15000);
+    }, 3000);
   }
 
   private spawnExhaustPlume() {
@@ -1055,45 +1026,57 @@ export class SpacecraftSimulator {
         mach
       );
 
-      // CINEMATIC MULTI-ANGLE CAMERA TRACKING:
+      // SMOOTH ATMOSPHERIC SKY COLOR DARKENING INTO DEEP SPACE:
+      // Smooth gradient from daylight sky blue into deep starry space void without sudden flashes
+      const spaceProgress = Math.min(1.0, altKm / 65);
+      const dayColor = new THREE.Color(0x38bdf8);
+      const spaceColor = new THREE.Color(0x020617);
+      const dynamicSky = dayColor.clone().lerp(spaceColor, Math.pow(spaceProgress, 0.65));
+      this.scene.background = dynamicSky;
+      if (this.scene.fog) {
+        this.scene.fog.color = dynamicSky;
+        (this.scene.fog as THREE.FogExp2).density = Math.max(0.0001, 0.0035 * (1 - spaceProgress));
+      }
+
+      // CINEMATIC MULTI-ANGLE CAMERA TRACKING (100% Clear of Towers):
       const t = this.launchTimeSec;
       if (t < 2.5) {
-        // Angle 1: Pad Hero Ground Shot looking up at the roaring engine nozzles
+        // Angle 1: South Crawlerway Pad Hero Angle (Looking up at roaring booster exhausts)
         this.camera.position.set(
-          PAD_X + 11 + Math.sin(t * 1.5) * 1.2,
-          PAD_Y + 1.2,
-          PAD_Z + 13 + Math.cos(t * 1.5) * 1.2
+          PAD_X + 2.0,
+          PAD_Y + 1.8,
+          PAD_Z - 14.5
         );
-        this.camera.lookAt(PAD_X, PAD_Y + 2 + this.launchAscentY * 0.6, PAD_Z);
-        // Heavy rocket launch vibration
-        this.camera.position.x += (Math.random() - 0.5) * 0.28;
-        this.camera.position.y += (Math.random() - 0.5) * 0.28;
-      } else if (t < 5.0) {
-        // Angle 2: Gantry Umbilical Tower Tracking Cam
-        const p2T = (t - 2.5) / 2.5;
+        this.camera.lookAt(PAD_X, PAD_Y + 2.5 + this.launchAscentY * 0.6, PAD_Z);
+        // Rocket launch pad acoustic rumble shake
+        this.camera.position.x += (Math.random() - 0.5) * 0.22;
+        this.camera.position.y += (Math.random() - 0.5) * 0.22;
+      } else if (t < 5.5) {
+        // Angle 2: South-East Wide Tracking Cam climbing alongside
+        const p2T = (t - 2.5) / 3.0;
         this.camera.position.set(
-          PAD_X + 18 - p2T * 5,
-          PAD_Y + 10 + p2T * 22,
-          PAD_Z + 19 - p2T * 5
+          PAD_X + 14 - p2T * 3,
+          PAD_Y + 8 + p2T * 24,
+          PAD_Z - 12 - p2T * 3
         );
         this.camera.lookAt(PAD_X, PAD_Y + this.launchAscentY, PAD_Z);
-        this.camera.position.x += (Math.random() - 0.5) * 0.12;
-      } else if (t < 8.0) {
-        // Angle 3: Supersonic Stratospheric Chase Cam
-        const orbitAngle = (t - 5.0) * 0.5;
-        const camDist = 20;
+        this.camera.position.x += (Math.random() - 0.5) * 0.08;
+      } else if (t < 9.0) {
+        // Angle 3: Stratospheric Orbital Chase Cam
+        const orbitAngle = (t - 5.5) * 0.45;
+        const camDist = 22;
         this.camera.position.set(
-          PAD_X + Math.cos(orbitAngle) * camDist,
-          PAD_Y + this.launchAscentY - 5,
-          PAD_Z + Math.sin(orbitAngle) * camDist
+          PAD_X + Math.sin(orbitAngle) * camDist,
+          PAD_Y + this.launchAscentY - 4,
+          PAD_Z - Math.cos(orbitAngle) * camDist
         );
-        this.camera.lookAt(PAD_X, PAD_Y + this.launchAscentY + 4, PAD_Z);
+        this.camera.lookAt(PAD_X, PAD_Y + this.launchAscentY + 2, PAD_Z);
       } else {
-        // Angle 4: Staging & Space Orbit Cam
+        // Angle 4: Orbital Space Insertion View
         this.camera.position.set(
-          PAD_X + 22,
-          PAD_Y + this.launchAscentY + 3,
-          PAD_Z + 22
+          PAD_X + 18,
+          PAD_Y + this.launchAscentY + 4,
+          PAD_Z - 18
         );
         this.camera.lookAt(PAD_X, PAD_Y + this.launchAscentY, PAD_Z);
       }

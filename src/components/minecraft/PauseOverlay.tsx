@@ -3,6 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { TimeOfDay } from "../../engine/minecraft/types";
+import { Play, Sparkles, Box, Sun, Moon } from "lucide-react";
 
 interface PauseOverlayProps {
   isVisible: boolean;
@@ -43,18 +44,23 @@ export function PauseOverlay({
             onClick={onEnterGame}
             className="bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-teal-500 hover:to-emerald-400 text-white font-bold text-sm py-3 px-4 border border-emerald-400 rounded-md shadow-lg shadow-emerald-600/40 transition-all hover:scale-105 flex items-center justify-center gap-2"
           >
-            <span>🎮</span> ENTER LAUNCH COMPLEX (LOCK MOUSE)
+            <Play className="w-4 h-4" /> ENTER LAUNCH COMPLEX (LOCK MOUSE)
           </button>
           <button
             onClick={onLoadCertifiedCraft}
-            className="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 py-2 px-3 rounded-md text-xs font-semibold transition-all hover:border-sky-400"
+            className="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 py-2 px-3 rounded-md text-xs font-semibold transition-all hover:border-sky-400 flex items-center justify-center gap-1.5"
           >
-            ✨ LOAD CERTIFIED SPACECRAFT
+            <Sparkles className="w-3.5 h-3.5 text-sky-400" /> LOAD CERTIFIED SPACECRAFT
           </button>
           <button
             onClick={onCycleTime}
-            className="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 py-2 px-3 rounded-md text-xs font-semibold transition-all hover:border-sky-400"
+            className="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 py-2 px-3 rounded-md text-xs font-semibold transition-all hover:border-sky-400 flex items-center justify-center gap-1.5"
           >
+            {timeOfDay === "NIGHT" ? (
+              <Moon className="w-3.5 h-3.5 text-amber-400" />
+            ) : (
+              <Sun className="w-3.5 h-3.5 text-amber-400" />
+            )}
             TIME OF DAY: {timeOfDay}
           </button>
           <div className="grid grid-cols-1 gap-2 mt-1">
@@ -62,7 +68,7 @@ export function PauseOverlay({
               href="/showcase"
               className="bg-slate-800 hover:bg-slate-700 text-purple-400 border border-slate-700 py-2.5 px-3 rounded-md text-xs font-semibold transition-all hover:border-purple-400 text-center flex items-center justify-center gap-2"
             >
-              <span>🧩</span> BROWSE ALL 3D AEROSPACE VOXEL MODELS
+              <Box className="w-4 h-4 text-purple-400" /> BROWSE ALL 3D AEROSPACE VOXEL MODELS
             </Link>
           </div>
         </div>

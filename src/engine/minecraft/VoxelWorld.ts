@@ -133,20 +133,20 @@ export class VoxelWorld {
       }
     }
 
-    // Massive Umbilical Gantry Tower
-    const gx = PAD_X - 6;
-    const gz = PAD_Z - 6;
+    // Massive Umbilical Gantry Tower (North-West corner, clear of South crawlerway)
+    const gx = PAD_X - 7;
+    const gz = PAD_Z - 7;
     for (let y = 1; y <= PAD_Y + 16; y++) {
       this.data[this.getIndex(gx, y, gz)] = BLOCKS.GANTRY_TOWER;
       this.data[this.getIndex(gx + 1, y, gz)] = BLOCKS.GANTRY_TOWER;
     }
 
-    // Lightning Mast Towers on both sides
-    const lx1 = PAD_X + 8,
-      lz1 = PAD_Z + 8;
-    const lx2 = PAD_X - 8,
-      lz2 = PAD_Z + 8;
-    for (let y = 1; y <= PAD_Y + 12; y++) {
+    // Lightning Mast Towers set back to perimeter so they never obstruct launch tracking cameras
+    const lx1 = PAD_X + 16,
+      lz1 = PAD_Z + 16;
+    const lx2 = PAD_X - 16,
+      lz2 = PAD_Z + 16;
+    for (let y = 1; y <= PAD_Y + 14; y++) {
       this.data[this.getIndex(lx1, y, lz1)] = BLOCKS.GANTRY_TOWER;
       this.data[this.getIndex(lx2, y, lz2)] = BLOCKS.GANTRY_TOWER;
     }

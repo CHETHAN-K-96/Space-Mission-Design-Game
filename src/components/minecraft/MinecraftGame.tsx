@@ -92,6 +92,7 @@ export function MinecraftGame() {
   const [showResources, setShowResources] = useState(false);
 
   // Launch Telemetry overlay
+  const [countdown, setCountdown] = useState<number | null>(null);
   const [launchTelem, setLaunchTelem] = useState<{
     isVisible: boolean;
     altitude: string;
@@ -150,6 +151,9 @@ export function MinecraftGame() {
         } else {
           setHoveredWorldBlock(null);
         }
+      },
+      onCountdown: (count) => {
+        setCountdown(count);
       },
       onLaunchTelemetry: (
         alt,
@@ -262,7 +266,7 @@ export function MinecraftGame() {
     } catch {
       // ignore
     }
-    showNotification("🚀 Entered Launch Complex! Click canvas to lock mouse, ESC for Pause Menu.");
+    showNotification("Entered Launch Complex! Click canvas to lock mouse, ESC for Pause Menu.");
   };
 
   const handleLoadCertifiedCraft = () => {
@@ -307,7 +311,7 @@ export function MinecraftGame() {
   const handleEncloseFairing = () => {
     if (simRef.current) {
       simRef.current.wrapWithFairingShroud();
-      showNotification("🛰️ Enclosed payload in aerodynamic fairing shroud!");
+      showNotification("Enclosed payload in aerodynamic fairing shroud!");
     }
   };
 
@@ -423,6 +427,27 @@ export function MinecraftGame() {
 
       {/* Notification Toast */}
       <NotificationToast message={toastMessage} />
+
+      {/* Cinematic 3-2-1 Launch Countdown Overlay */}
+      {countdown !== null && (
+        <div className="fixed inset-0 z-50 pointer-events-none flex flex-col items-center justify-center bg-slate-950/40 backdrop-blur-[2px] transition-all">
+          <div className="relative flex flex-col items-center">
+            {/* Outer animated telemetry ring */}
+            <div className="w-56 h-56 rounded-full border-4 border-sky-500/30 border-t-emerald-400 animate-spin" />
+            <div className="absolute inset-0 flex flex-col items-center justify-center">
+              <span className="text-[11px] font-bold text-sky-400 tracking-widest uppercase mb-1">
+                TERMINAL COUNTDOWN
+              </span>
+              <span className="text-7xl font-black text-white tracking-tight drop-shadow-[0_0_35px_rgba(16,185,129,0.85)] animate-pulse">
+                {countdown === 0 ? "LIFTOFF!" : countdown}
+              </span>
+              <span className="text-[11px] font-mono text-emerald-400 font-bold tracking-wider mt-2 bg-slate-900/90 px-3.5 py-0.5 rounded-full border border-emerald-500/40">
+                {countdown === 0 ? "VEHICLE COMMITTED" : `T-00:0${countdown}`}
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Launch Ascent Telemetry HUD Overlay */}
       <LaunchTelemetryHud

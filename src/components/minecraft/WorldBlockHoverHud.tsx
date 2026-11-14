@@ -2,25 +2,47 @@
 
 import React from "react";
 import { COMPONENT_DEFS } from "../../engine/minecraft/constants";
+import {
+  Rocket,
+  Zap,
+  Radio,
+  Compass,
+  Cpu,
+  Layers,
+  Box,
+  Atom,
+} from "lucide-react";
 
 interface WorldBlockHoverHudProps {
   blockType: number | null;
   worldPos?: [number, number, number];
 }
 
-const SUBSYSTEM_ICONS: Record<string, string> = {
-  SCIENCE: "🔬",
-  PAYLOAD: "🔬",
-  PROPULSION: "🚀",
-  ROCKET: "🚀",
-  POWER: "⚡",
-  EPS: "⚡",
-  COMMS: "📡",
-  ADCS: "🧭",
-  AVIONICS: "💻",
-  BUS: "🏗️",
-  STRUCTURE: "🏗️",
-};
+function getSubsystemIcon(subsystem: string, category: string) {
+  const s = (subsystem || category || "").toUpperCase();
+  if (s.includes("PROPULSION") || s.includes("ROCKET")) {
+    return <Rocket className="w-3.5 h-3.5 text-orange-400 shrink-0" />;
+  }
+  if (s.includes("POWER") || s.includes("EPS")) {
+    return <Zap className="w-3.5 h-3.5 text-amber-400 shrink-0" />;
+  }
+  if (s.includes("COMMS")) {
+    return <Radio className="w-3.5 h-3.5 text-sky-400 shrink-0" />;
+  }
+  if (s.includes("ADCS")) {
+    return <Compass className="w-3.5 h-3.5 text-purple-400 shrink-0" />;
+  }
+  if (s.includes("AVIONICS")) {
+    return <Cpu className="w-3.5 h-3.5 text-blue-400 shrink-0" />;
+  }
+  if (s.includes("SCIENCE") || s.includes("PAYLOAD")) {
+    return <Atom className="w-3.5 h-3.5 text-emerald-400 shrink-0" />;
+  }
+  if (s.includes("STRUCTURE") || s.includes("BUS")) {
+    return <Layers className="w-3.5 h-3.5 text-slate-300 shrink-0" />;
+  }
+  return <Box className="w-3.5 h-3.5 text-sky-400 shrink-0" />;
+}
 
 export function WorldBlockHoverHud({
   blockType,
@@ -34,10 +56,7 @@ export function WorldBlockHoverHud({
   const def = COMPONENT_DEFS[blockType];
   if (!def) return null;
 
-  const icon =
-    SUBSYSTEM_ICONS[def.subsystem] ||
-    SUBSYSTEM_ICONS[def.category] ||
-    "🛰️";
+  const icon = getSubsystemIcon(def.subsystem, def.category);
 
   const categoryLabel =
     def.category === "ROCKET"
@@ -56,7 +75,7 @@ export function WorldBlockHoverHud({
         {/* Header: Name and Subsystem Badge */}
         <div className="flex justify-between items-center gap-2 border-b border-slate-700/80 pb-1.5 mb-2">
           <div className="flex items-center gap-1.5 text-xs font-bold text-white tracking-wide truncate">
-            <span>{icon}</span>
+            {icon}
             <span className="truncate">{def.name}</span>
           </div>
           <span
@@ -75,46 +94,37 @@ export function WorldBlockHoverHud({
           </div>
           <div className="bg-slate-900/90 border border-slate-800 p-1 rounded text-center">
             <span className="text-purple-400 block text-[9px]">MASS</span>
-            <strong className="text-white font-bold">{def.mass_kg} kg</strong>
+            <strong className="text-white font-bold">{def.mass_kg}kg</strong>
           </div>
           <div className="bg-slate-900/90 border border-slate-800 p-1 rounded text-center">
             <span className="text-emerald-400 block text-[9px]">POWER</span>
-            <strong className="text-white font-bold">
-              {def.power_w >= 0 ? "+" : ""}
-              {def.power_w} W
+            <strong
+              className={`font-bold ${
+                def.power_w > 0
+                  ? "text-emerald-400"
+                  : def.power_w < 0
+                  ? "text-rose-400"
+                  : "text-slate-300"
+              }`}
+            >
+              {def.power_w > 0 ? `+${def.power_w}` : def.power_w}W
             </strong>
           </div>
           <div className="bg-slate-900/90 border border-slate-800 p-1 rounded text-center">
-            <span className="text-sky-400 block text-[9px]">
-              {def.thrust_kn
-                ? "THRUST"
-                : def.data_mbps
-                ? "DATA"
-                : def.science_pts
-                ? "SCIENCE"
-                : "SPEC"}
-            </span>
-            <strong className="text-white font-bold">
-              {def.thrust_kn
-                ? `${def.thrust_kn} kN`
-                : def.data_mbps
-                ? `${def.data_mbps} M/s`
-                : def.science_pts
-                ? `${def.science_pts} Pts`
-                : "STD"}
-            </strong>
+            <span className="text-sky-400 block text-[9px]">THRUST</span>
+            <strong className="text-white font-bold">{def.thrust_kn}kN</strong>
           </div>
         </div>
 
-        {/* Description & World Coordinate Pill */}
-        <div className="mt-1.5 flex justify-between items-center text-[9px] text-slate-400 border-t border-slate-800/80 pt-1">
-          <span className="truncate max-w-[210px]">{def.desc}</span>
-          {worldPos && (
-            <span className="text-sky-400 shrink-0 font-mono font-bold bg-sky-950/70 border border-sky-600/40 px-1 rounded">
+        {/* World Coordinate Position */}
+        {worldPos && (
+          <div className="mt-1.5 text-[9px] text-slate-500 font-mono flex justify-between">
+            <span>GRID COORD:</span>
+            <span>
               [{worldPos[0]}, {worldPos[1]}, {worldPos[2]}]
             </span>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );

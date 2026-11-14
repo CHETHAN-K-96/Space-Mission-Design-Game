@@ -1,12 +1,31 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import {
   TelemetryData,
   TimeOfDay,
   MissionDef,
   DevStage,
 } from "../../engine/minecraft/types";
+import {
+  Rocket,
+  Layers,
+  Eye,
+  EyeOff,
+  Sparkles,
+  Sun,
+  Moon,
+  Users,
+  FileText,
+  BookOpen,
+  Trash2,
+  Compass,
+  Box,
+  ChevronDown,
+  ShieldAlert,
+  ShieldCheck,
+  MoreHorizontal,
+} from "lucide-react";
 
 interface CockpitHudProps {
   telemetry: TelemetryData;
@@ -59,6 +78,8 @@ export function CockpitHud({
   onToggleFlight,
   onClearCraft,
 }: CockpitHudProps) {
+  const [showUtilities, setShowUtilities] = useState(false);
+
   const maxBudget = activeMission.budget_m || 160;
   const currentCost = telemetry.totalCostM ?? 0;
   const budgetPct = Math.min(
@@ -78,185 +99,238 @@ export function CockpitHud({
     activeMission.require_closed_comms;
 
   return (
-    <div className="absolute top-2 left-1/2 -translate-x-1/2 w-[98%] max-w-[1380px] z-20 flex flex-col gap-1.5 pointer-events-auto font-mono">
-      {/* Top Header Bar */}
-      <div className="flex justify-between items-center bg-slate-900/95 border border-sky-400/35 backdrop-blur-md px-3.5 py-1.5 rounded-md shadow-2xl gap-2.5 flex-wrap">
-        <div className="flex items-center gap-2">
-          <span className="bg-red-600 text-white font-extrabold text-[10px] px-2 py-0.5 rounded tracking-widest">
-            NASA JPL
-          </span>
-          <strong className="text-white text-xs sm:text-sm tracking-wide">
-            SPACECRAFT VAB CRAFTING SIMULATOR
-          </strong>
-        </div>
-
-        {/* Mission Selector */}
-        <div className="flex items-center">
-          <select
-            value={activeMissionKey}
-            onChange={(e) => onMissionChange(e.target.value)}
-            className="bg-slate-800 text-sky-400 border border-sky-600 px-2 py-1 rounded font-mono text-[11px] cursor-pointer outline-none font-bold"
-          >
-            <option value="earth_sentinel">
-              Earth Observation Sentinel ($160M)
-            </option>
-            <option value="asteroid_scout">
-              Deep Space Asteroid Scout ($290M)
-            </option>
-            <option value="space_telescope">
-              James Webb Space Observatory ($520M)
-            </option>
-            <option value="artemis_lunar">
-              Artemis: Lunar Transfer Orbiter ($880M)
-            </option>
-            <option value="sandbox_mode">⚙️ Custom Sandbox Mode ($1000M)</option>
-          </select>
-        </div>
-
-        {/* Development Stage Switcher */}
-        {onToggleDevStage && (
-          <button
-            onClick={onToggleDevStage}
-            className={`px-3 py-1 rounded border text-[11px] transition-all font-bold flex items-center gap-1.5 shadow-md ${
-              devStage === "STAGE_1_ROCKET"
-                ? "bg-amber-600 hover:bg-amber-500 text-white border-amber-400 shadow-amber-600/30"
-                : "bg-cyan-600 hover:bg-cyan-500 text-white border-cyan-400 shadow-cyan-600/30"
-            }`}
-            title="Toggle between Stage 1 (Rocket Construction) and Stage 2 (Satellite Payload Integration)"
-          >
-            <span>{devStage === "STAGE_1_ROCKET" ? "🚀" : "🛰️"}</span>
-            <span>
-              {devStage === "STAGE_1_ROCKET"
-                ? "STAGE 1: ROCKET BUILDER (EASY)"
-                : "STAGE 2: SATELLITE INTEGRATION"}
+    <div className="absolute top-2 left-1/2 -translate-x-1/2 w-[98%] max-w-[1400px] z-20 flex flex-col gap-2 pointer-events-auto font-sans">
+      {/* Sleek Aerospace Top Navigation Bar */}
+      <div className="flex justify-between items-center bg-slate-950/90 border border-slate-700/60 backdrop-blur-md px-4 py-2 rounded-xl shadow-2xl gap-3 flex-wrap">
+        {/* Left Section: Branding & Mission Select */}
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <span className="bg-red-600 text-white font-extrabold text-[10px] px-2 py-0.5 rounded tracking-widest uppercase">
+              NASA JPL
             </span>
-          </button>
+            <span className="text-slate-200 font-semibold text-xs tracking-wider uppercase hidden sm:inline">
+              VAB Simulator
+            </span>
+          </div>
+
+          <div className="relative">
+            <select
+              value={activeMissionKey}
+              onChange={(e) => onMissionChange(e.target.value)}
+              className="bg-slate-900 text-sky-400 border border-slate-700 hover:border-sky-500 px-3 py-1.5 pr-7 rounded-lg text-xs font-medium cursor-pointer outline-none appearance-none transition-colors"
+            >
+              <option value="earth_sentinel">
+                Earth Sentinel (Falcon 9 • $160M)
+              </option>
+              <option value="asteroid_scout">
+                Asteroid Scout (Falcon Heavy • $290M)
+              </option>
+              <option value="space_telescope">
+                Space Observatory (SLS • $520M)
+              </option>
+              <option value="artemis_lunar">
+                Artemis Lunar (Saturn V • $880M)
+              </option>
+              <option value="sandbox_mode">Sandbox Mode ($1000M)</option>
+            </select>
+            <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+          </div>
+        </div>
+
+        {/* Center Section: Stage Switcher (Rocket vs Satellite) */}
+        {onToggleDevStage && (
+          <div className="flex items-center bg-slate-900 p-0.5 rounded-lg border border-slate-800">
+            <button
+              onClick={() => devStage !== "STAGE_1_ROCKET" && onToggleDevStage()}
+              className={`px-3 py-1 rounded-md text-xs font-semibold flex items-center gap-1.5 transition-all ${
+                devStage === "STAGE_1_ROCKET"
+                  ? "bg-amber-600 text-white shadow-sm"
+                  : "text-slate-400 hover:text-slate-200"
+              }`}
+              title="Stage 1: Build outer rocket architecture, fuel tanks, and booster engines"
+            >
+              <Rocket className="w-3.5 h-3.5" />
+              <span>Stage 1: Rocket Architecture</span>
+            </button>
+            <button
+              onClick={() => devStage !== "STAGE_2_SATELLITE" && onToggleDevStage()}
+              className={`px-3 py-1 rounded-md text-xs font-semibold flex items-center gap-1.5 transition-all ${
+                devStage === "STAGE_2_SATELLITE"
+                  ? "bg-sky-600 text-white shadow-sm"
+                  : "text-slate-400 hover:text-slate-200"
+              }`}
+              title="Stage 2: Satellite payload integration, power, and science instruments"
+            >
+              <Box className="w-3.5 h-3.5" />
+              <span>Stage 2: Satellite Payload</span>
+            </button>
+          </div>
         )}
 
-        {/* Action Buttons */}
-        <div className="flex items-center gap-1.5 flex-wrap text-xs">
+        {/* Right Section: Primary Actions & Launch */}
+        <div className="flex items-center gap-2">
+          {/* Auto-Build Button */}
           <button
             onClick={onAutoBuild}
-            className="bg-sky-600 hover:bg-sky-500 text-white font-bold border border-sky-400 px-2.5 py-1 rounded text-[11px] transition-all"
+            className="bg-slate-800 hover:bg-slate-700 text-sky-300 border border-slate-700 hover:border-sky-500 px-3 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5"
             title="Auto-build flight ready spacecraft"
           >
-            ✨ BUILD READY CRAFT
+            <Sparkles className="w-3.5 h-3.5 text-sky-400" />
+            <span>Auto Build</span>
           </button>
-          {onEncloseFairing && (
-            <button
-              onClick={onEncloseFairing}
-              className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold border border-indigo-400 px-2.5 py-1 rounded text-[11px] transition-all shadow-sm flex items-center gap-1"
-              title="Enclose inner satellite payload inside aerodynamic fairing shroud"
-            >
-              🛰️ ENCLOSE IN FAIRING SHROUD
-            </button>
-          )}
+
+          {/* Blueprint Toggle */}
           <button
             onClick={onToggleBlueprint}
-            className={`px-2 py-1 rounded border text-[11px] transition-all font-semibold ${
+            className={`px-3 py-1.5 rounded-lg border text-xs font-medium transition-all flex items-center gap-1.5 ${
               blueprintVisible
-                ? "border-sky-400 text-sky-400 bg-sky-950/40"
-                : "border-slate-600 text-slate-400 bg-slate-800"
+                ? "border-sky-500 text-sky-300 bg-sky-950/50"
+                : "border-slate-700 text-slate-400 bg-slate-900 hover:bg-slate-800"
             }`}
-            title="Toggle Holographic Blueprint Wireframe (B)"
+            title="Toggle Holographic Blueprint Wireframe (Key: B)"
           >
-            📐 BLUEPRINT: {blueprintVisible ? "ON" : "OFF"} (B)
+            <Layers className="w-3.5 h-3.5" />
+            <span>Blueprint (B)</span>
           </button>
-          {onToggleBlueprintMode && (
-            <button
-              onClick={onToggleBlueprintMode}
-              className="bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-cyan-500/60 px-2 py-1 rounded text-[11px] transition-all font-semibold"
-              title="Toggle between Inner Satellite and Full Rocket Launcher blueprint views"
-            >
-              📐 {blueprintMode === "SATELLITE" ? "INNER SATELLITE" : "FULL ROCKET LAUNCHER"}
-            </button>
-          )}
+
+          {/* Fairing Cutaway Toggle */}
           <button
             onClick={onToggleCutaway}
-            className={`px-2 py-1 rounded border text-[11px] transition-all font-semibold ${
+            className={`px-3 py-1.5 rounded-lg border text-xs font-medium transition-all flex items-center gap-1.5 ${
               fairingCutaway
-                ? "border-sky-400 text-sky-400 bg-sky-950/60 shadow-sm shadow-sky-500/30"
-                : "border-purple-400 text-purple-300 bg-purple-950/40"
+                ? "border-purple-500 text-purple-300 bg-purple-950/50"
+                : "border-slate-700 text-slate-400 bg-slate-900 hover:bg-slate-800"
             }`}
-            title="Toggle Fairing Shroud X-Ray Cutaway / Solid Hull (X)"
+            title="Toggle Fairing Shroud X-Ray Cutaway / Solid Fuselage (Key: X)"
           >
-            {fairingCutaway ? "👁️ FAIRING: CUTAWAY" : "👁️ FAIRING: SOLID"} (X)
+            {fairingCutaway ? (
+              <Eye className="w-3.5 h-3.5 text-purple-400" />
+            ) : (
+              <EyeOff className="w-3.5 h-3.5" />
+            )}
+            <span>{fairingCutaway ? "Cutaway" : "Solid"} (X)</span>
           </button>
+
+          {/* LAUNCH BUTTON */}
           <button
             onClick={onLaunchReview}
-            className="bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-teal-500 hover:to-emerald-400 text-white font-bold text-[11px] px-3 py-1 border border-emerald-400 rounded shadow-md shadow-emerald-600/40 transition-all hover:scale-105 flex items-center gap-1"
-            title="Flight Readiness Review (L)"
+            className="bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-teal-500 hover:to-emerald-400 text-white font-bold text-xs px-4 py-1.5 border border-emerald-400 rounded-lg shadow-md shadow-emerald-600/30 transition-all hover:scale-105 flex items-center gap-1.5"
+            title="Flight Readiness Review and Orbital Launch (Key: L)"
           >
-            <span>🚀</span> LAUNCH MISSION (L)
+            <Rocket className="w-4 h-4" />
+            <span>Launch Test (L)</span>
           </button>
-          <button
-            onClick={onCycleTime}
-            className="bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-600 px-2 py-1 rounded text-[11px] transition-all"
-          >
-            TIME: {timeOfDay}
-          </button>
-          <button
-            onClick={onOpenDossier}
-            className="bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-600 px-2 py-1 rounded text-[11px] transition-all"
-          >
-            📋 DOSSIER
-          </button>
-          <button
-            onClick={onOpenTeam}
-            className="bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-600 px-2 py-1 rounded text-[11px] transition-all"
-          >
-            👥 4-PLAYER TEAM
-          </button>
-          <button
-            onClick={onOpenResources}
-            className="bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-600 px-2 py-1 rounded text-[11px] transition-all"
-          >
-            📚 NASA RESOURCES
-          </button>
-          <button
-            onClick={onToggleFlight}
-            className="bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-600 px-2 py-1 rounded text-[11px] transition-all"
-          >
-            FLY: {isFlying ? "ON" : "OFF"} (F)
-          </button>
-          <button
-            onClick={onClearCraft}
-            className="bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-600 px-2 py-1 rounded text-[11px] transition-all"
-          >
-            CLEAR
-          </button>
+
+          {/* Utilities Dropdown Menu */}
+          <div className="relative">
+            <button
+              onClick={() => setShowUtilities(!showUtilities)}
+              className="bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-slate-200 border border-slate-700 p-1.5 rounded-lg transition-colors"
+              title="More Options"
+            >
+              <MoreHorizontal className="w-4 h-4" />
+            </button>
+
+            {showUtilities && (
+              <div className="absolute right-0 top-full mt-1.5 w-48 bg-slate-900/95 border border-slate-700 rounded-xl shadow-2xl p-1.5 z-50 flex flex-col gap-1 backdrop-blur-md">
+                <button
+                  onClick={() => {
+                    onCycleTime();
+                    setShowUtilities(false);
+                  }}
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs text-slate-300 hover:bg-slate-800 transition-colors w-full text-left"
+                >
+                  {timeOfDay === "NIGHT" ? (
+                    <Moon className="w-4 h-4 text-amber-400" />
+                  ) : (
+                    <Sun className="w-4 h-4 text-amber-400" />
+                  )}
+                  <span>Time: {timeOfDay}</span>
+                </button>
+                <button
+                  onClick={() => {
+                    onToggleFlight();
+                    setShowUtilities(false);
+                  }}
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs text-slate-300 hover:bg-slate-800 transition-colors w-full text-left"
+                >
+                  <Compass className="w-4 h-4 text-sky-400" />
+                  <span>Free Fly: {isFlying ? "ON" : "OFF"} (F)</span>
+                </button>
+                <button
+                  onClick={() => {
+                    onOpenDossier();
+                    setShowUtilities(false);
+                  }}
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs text-slate-300 hover:bg-slate-800 transition-colors w-full text-left"
+                >
+                  <FileText className="w-4 h-4 text-indigo-400" />
+                  <span>Mission Dossier</span>
+                </button>
+                <button
+                  onClick={() => {
+                    onOpenTeam();
+                    setShowUtilities(false);
+                  }}
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs text-slate-300 hover:bg-slate-800 transition-colors w-full text-left"
+                >
+                  <Users className="w-4 h-4 text-emerald-400" />
+                  <span>Mission Team</span>
+                </button>
+                <button
+                  onClick={() => {
+                    onOpenResources();
+                    setShowUtilities(false);
+                  }}
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs text-slate-300 hover:bg-slate-800 transition-colors w-full text-left"
+                >
+                  <BookOpen className="w-4 h-4 text-purple-400" />
+                  <span>NASA Standards</span>
+                </button>
+                <div className="border-t border-slate-800 my-1" />
+                <button
+                  onClick={() => {
+                    onClearCraft();
+                    setShowUtilities(false);
+                  }}
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs text-rose-400 hover:bg-rose-950/40 transition-colors w-full text-left"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  <span>Clear Launchpad</span>
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* Live Telemetry Gauges Grid (6 Columns) */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-1.5">
-        {/* Budget */}
+      {/* Simplified Aerospace Telemetry Readout Grid */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 font-mono">
+        {/* Budget Metric */}
         <div
-          className={`bg-slate-900/90 border p-1.5 rounded-md shadow-md flex flex-col justify-between transition-colors ${
+          className={`bg-slate-950/85 border p-2 rounded-lg shadow-sm flex flex-col justify-between transition-colors ${
             telemetry.isOverBudget
-              ? "border-rose-500 bg-rose-950/40"
-              : "border-slate-700/80"
+              ? "border-rose-500 bg-rose-950/30"
+              : "border-slate-800"
           }`}
         >
-          <div className="flex justify-between text-[10px] text-slate-400">
-            <span>BUDGET ($M)</span>
-            <span>${currentCost}M / ${maxBudget}M</span>
+          <div className="flex justify-between text-[10px] text-slate-400 uppercase tracking-wider">
+            <span>Budget Ceiling</span>
+            <span>${maxBudget}M Max</span>
           </div>
-          <div className="text-sm font-bold text-slate-100 mt-0.5 flex justify-between items-baseline">
-            <span>${currentCost}M SPENT</span>
+          <div className="text-sm font-bold text-slate-100 mt-1 flex justify-between items-baseline">
+            <span>${currentCost}M Spent</span>
             <span
-              className={`text-[10px] ${
-                telemetry.isOverBudget
-                  ? "text-rose-400 font-bold"
-                  : "text-emerald-400"
+              className={`text-[10px] font-semibold ${
+                telemetry.isOverBudget ? "text-rose-400" : "text-emerald-400"
               }`}
             >
               {telemetry.isOverBudget
-                ? `+$${telemetry.overBudgetAmount}M OVER`
-                : `$${telemetry.budgetRemaining}M LEFT`}
+                ? `+$${telemetry.overBudgetAmount}M Over`
+                : `$${telemetry.budgetRemaining}M Left`}
             </span>
           </div>
-          <div className="w-full h-1 bg-slate-800 rounded-sm mt-1 overflow-hidden">
+          <div className="w-full h-1 bg-slate-800 rounded-sm mt-1.5 overflow-hidden">
             <div
               className="h-full transition-all duration-300"
               style={{
@@ -267,16 +341,16 @@ export function CockpitHud({
           </div>
         </div>
 
-        {/* Mass */}
-        <div className="bg-slate-900/90 border border-slate-700/80 p-1.5 rounded-md shadow-md flex flex-col justify-between">
-          <div className="flex justify-between text-[10px] text-slate-400">
-            <span>TOTAL MASS</span>
-            <span>{telemetry.blocksCount} Blocks</span>
+        {/* Total Mass Metric */}
+        <div className="bg-slate-950/85 border border-slate-800 p-2 rounded-lg shadow-sm flex flex-col justify-between">
+          <div className="flex justify-between text-[10px] text-slate-400 uppercase tracking-wider">
+            <span>Vehicle Mass</span>
+            <span>{telemetry.blocksCount} Components</span>
           </div>
-          <div className="text-sm font-bold text-slate-100 mt-0.5">
-            {telemetry.totalMass} kg
+          <div className="text-sm font-bold text-slate-100 mt-1">
+            {telemetry.totalMass.toLocaleString()} kg
           </div>
-          <div className="w-full h-1 bg-slate-800 rounded-sm mt-1 overflow-hidden">
+          <div className="w-full h-1 bg-slate-800 rounded-sm mt-1.5 overflow-hidden">
             <div
               className="h-full bg-purple-500 transition-all duration-300"
               style={{ width: `${massPct}%` }}
@@ -284,46 +358,27 @@ export function CockpitHud({
           </div>
         </div>
 
-        {/* Net Power */}
+        {/* Propulsion / TWR Metric */}
         <div
-          className={`bg-slate-900/90 border p-1.5 rounded-md shadow-md flex flex-col justify-between transition-colors ${
-            powerAlert
-              ? "border-rose-500 bg-rose-950/40"
-              : "border-slate-700/80"
+          className={`bg-slate-950/85 border p-2 rounded-lg shadow-sm flex flex-col justify-between transition-colors ${
+            thrustAlert ? "border-amber-500 bg-amber-950/20" : "border-slate-800"
           }`}
         >
-          <div className="flex justify-between text-[10px] text-slate-400">
-            <span>NET POWER (EPS)</span>
-            <span>+{telemetry.powerGen}W Gen</span>
-          </div>
-          <div className="text-sm font-bold text-slate-100 mt-0.5">
-            {telemetry.netPower >= 0 ? "+" : ""}
-            {telemetry.netPower} W
-          </div>
-          <div className="w-full h-1 bg-slate-800 rounded-sm mt-1 overflow-hidden">
-            <div
-              className="h-full bg-emerald-500 transition-all duration-300"
-              style={{ width: "50%" }}
-            />
-          </div>
-        </div>
-
-        {/* Thrust */}
-        <div
-          className={`bg-slate-900/90 border p-1.5 rounded-md shadow-md flex flex-col justify-between transition-colors ${
-            thrustAlert
-              ? "border-rose-500 bg-rose-950/40"
-              : "border-slate-700/80"
-          }`}
-        >
-          <div className="flex justify-between text-[10px] text-slate-400">
-            <span>PROPULSION (TWR)</span>
+          <div className="flex justify-between text-[10px] text-slate-400 uppercase tracking-wider">
+            <span>Propulsion Authority</span>
             <span>Min: {telemetry.minLiftThrust} kN</span>
           </div>
-          <div className="text-sm font-bold text-slate-100 mt-0.5">
-            {telemetry.totalThrust} kN ({telemetry.twr}x)
+          <div className="text-sm font-bold text-slate-100 mt-1 flex justify-between items-baseline">
+            <span>{telemetry.totalThrust} kN</span>
+            <span
+              className={`text-[11px] font-bold ${
+                telemetry.twr >= 1.0 ? "text-emerald-400" : "text-amber-400"
+              }`}
+            >
+              {telemetry.twr}x TWR
+            </span>
           </div>
-          <div className="w-full h-1 bg-slate-800 rounded-sm mt-1 overflow-hidden">
+          <div className="w-full h-1 bg-slate-800 rounded-sm mt-1.5 overflow-hidden">
             <div
               className="h-full bg-orange-500 transition-all duration-300"
               style={{
@@ -333,49 +388,54 @@ export function CockpitHud({
           </div>
         </div>
 
-        {/* Comms */}
-        <div
-          className={`bg-slate-900/90 border p-1.5 rounded-md shadow-md flex flex-col justify-between transition-colors ${
-            commsAlert
-              ? "border-rose-500 bg-rose-950/40"
-              : "border-slate-700/80"
-          }`}
-        >
-          <div className="flex justify-between text-[10px] text-slate-400">
-            <span>COMMS DOWNLINK</span>
-            <span>+{telemetry.dataGen} MBps</span>
+        {/* Stage-Dependent 4th Metric */}
+        {devStage === "STAGE_1_ROCKET" ? (
+          <div className="bg-slate-950/85 border border-slate-800 p-2 rounded-lg shadow-sm flex flex-col justify-between">
+            <div className="flex justify-between text-[10px] text-slate-400 uppercase tracking-wider">
+              <span>Payload Container Slot</span>
+              <span className="text-[10px] text-sky-400">Stage 1 Envelope</span>
+            </div>
+            <div className="text-sm font-bold mt-1 flex items-center gap-1.5">
+              {telemetry.hasPayloadContainer ? (
+                <>
+                  <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                  <span className="text-emerald-400">Container Mounted</span>
+                </>
+              ) : (
+                <>
+                  <Box className="w-4 h-4 text-slate-400" />
+                  <span className="text-slate-300">Direct Launch (Optional)</span>
+                </>
+              )}
+            </div>
+            <div className="text-[10px] text-slate-500 mt-1">
+              Detailed payload systems in Stage 2
+            </div>
           </div>
-          <div className="text-sm font-bold text-slate-100 mt-0.5">
-            {telemetry.dataDownlink} MBps
+        ) : (
+          <div
+            className={`bg-slate-950/85 border p-2 rounded-lg shadow-sm flex flex-col justify-between transition-colors ${
+              powerAlert
+                ? "border-rose-500 bg-rose-950/30"
+                : "border-slate-800"
+            }`}
+          >
+            <div className="flex justify-between text-[10px] text-slate-400 uppercase tracking-wider">
+              <span>Solar EPS Balance</span>
+              <span>+{telemetry.powerGen}W Gen</span>
+            </div>
+            <div className="text-sm font-bold text-slate-100 mt-1">
+              {telemetry.netPower >= 0 ? "+" : ""}
+              {telemetry.netPower} W Margin
+            </div>
+            <div className="w-full h-1 bg-slate-800 rounded-sm mt-1.5 overflow-hidden">
+              <div
+                className="h-full bg-emerald-500 transition-all duration-300"
+                style={{ width: "50%" }}
+              />
+            </div>
           </div>
-          <div className="w-full h-1 bg-slate-800 rounded-sm mt-1 overflow-hidden">
-            <div
-              className="h-full bg-cyan-500 transition-all duration-300"
-              style={{
-                width: `${Math.min(telemetry.dataDownlink, 100)}%`,
-              }}
-            />
-          </div>
-        </div>
-
-        {/* Science Return */}
-        <div className="bg-slate-900/90 border border-slate-700/80 p-1.5 rounded-md shadow-md flex flex-col justify-between">
-          <div className="flex justify-between text-[10px] text-slate-400">
-            <span>SCIENCE RETURN</span>
-            <span>{telemetry.batteryCount} Batt</span>
-          </div>
-          <div className="text-sm font-bold text-slate-100 mt-0.5">
-            {telemetry.sciencePts} pts
-          </div>
-          <div className="w-full h-1 bg-slate-800 rounded-sm mt-1 overflow-hidden">
-            <div
-              className="h-full bg-pink-500 transition-all duration-300"
-              style={{
-                width: `${Math.min(telemetry.sciencePts / 2, 100)}%`,
-              }}
-            />
-          </div>
-        </div>
+        )}
       </div>
     </div>
   );

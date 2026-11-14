@@ -285,35 +285,46 @@ export const VoxelModelFactory = {
 
     if (type === BLOCKS.VACUUM_ENGINE) {
       const group = new THREE.Group();
-      const puckGeo = new THREE.CylinderGeometry(0.48, 0.48, 0.1, 24);
-      const puckMat = new THREE.MeshStandardMaterial({
-        color: 0x1e293b,
-        metalness: 0.8,
-      });
-      const puck = new THREE.Mesh(puckGeo, puckMat);
-      puck.position.y = 0.45;
-      group.add(puck);
-
-      const headGeo = new THREE.CylinderGeometry(0.22, 0.26, 0.22, 16);
-      const headMat = new THREE.MeshStandardMaterial({
-        color: 0xd97706,
-        metalness: 0.9,
-      });
-      const head = new THREE.Mesh(headGeo, headMat);
-      head.position.y = 0.28;
-      group.add(head);
-
-      const bellGeo = new THREE.CylinderGeometry(0.14, 0.44, 0.72, 20, 1, true);
-      const bellMat =
+      
+      // Covered cylindrical aerospace fuselage shroud to match outer rocket structure seamlessly
+      const shroudGeo = new THREE.CylinderGeometry(0.485, 0.485, 0.96, 24, 1, false);
+      const shroudMat =
         MATERIALS[type] ||
         new THREE.MeshStandardMaterial({
-          color: 0x9a3412,
-          metalness: 0.8,
-          side: THREE.DoubleSide,
+          color: 0x334155,
+          metalness: 0.7,
+          roughness: 0.3,
         });
+      const shroud = new THREE.Mesh(shroudGeo, shroudMat);
+      group.add(shroud);
+
+      addCylindricalDockingRims(group, 0.485, 0x1e293b);
+
+      // Gold thermal service access panels
+      const panelGeo = new THREE.BoxGeometry(0.04, 0.35, 0.25);
+      const panelMat = new THREE.MeshStandardMaterial({
+        color: 0xd97706,
+        metalness: 0.85,
+        roughness: 0.2,
+      });
+      const p1 = new THREE.Mesh(panelGeo, panelMat);
+      p1.position.set(0.47, 0, 0);
+      const p2 = new THREE.Mesh(panelGeo, panelMat);
+      p2.position.set(-0.47, 0, 0);
+      group.add(p1, p2);
+
+      // Recessed interstage expansion vacuum bell nozzle (visible from bottom/vent)
+      const bellGeo = new THREE.CylinderGeometry(0.12, 0.42, 0.65, 20, 1, true);
+      const bellMat = new THREE.MeshStandardMaterial({
+        color: 0x9a3412,
+        metalness: 0.9,
+        roughness: 0.25,
+        side: THREE.DoubleSide,
+      });
       const bell = new THREE.Mesh(bellGeo, bellMat);
-      bell.position.y = -0.12;
+      bell.position.y = -0.16;
       group.add(bell);
+
       return group;
     }
 
@@ -726,23 +737,32 @@ export const VoxelModelFactory = {
 
     if (type === BLOCKS.SAT_PAYLOAD_CONTAINER) {
       const group = new THREE.Group();
-      addZeroGapDockingPlates(group, 0.96, 0.96, 0xd97706);
 
-      // Translucent payload envelope indicator cage
-      const cageMat = new THREE.MeshStandardMaterial({
-        color: 0x38bdf8,
-        transparent: true,
-        opacity: 0.35,
-        roughness: 0.2,
+      // Outer cylindrical fairing barrel matching outer rocket fuselage envelope
+      const barrelGeo = new THREE.CylinderGeometry(0.485, 0.485, 0.96, 24, 1, false);
+      const barrelMat =
+        MATERIALS[type] ||
+        new THREE.MeshStandardMaterial({
+          color: 0xf8fafc,
+          roughness: 0.25,
+          metalness: 0.1,
+        });
+      const barrel = new THREE.Mesh(barrelGeo, barrelMat);
+      group.add(barrel);
+
+      addCylindricalDockingRims(group, 0.485, 0x0284c7);
+
+      // NASA payload integration indicator stripe
+      const stripeGeo = new THREE.CylinderGeometry(0.488, 0.488, 0.12, 24);
+      const stripeMat = new THREE.MeshStandardMaterial({
+        color: 0x0284c7,
         metalness: 0.8,
+        roughness: 0.3,
       });
-      const cage = new THREE.Mesh(
-        new THREE.BoxGeometry(0.78, 0.78, 0.78),
-        cageMat
-      );
-      group.add(cage);
+      stripeGeo.translate(0, 0.25, 0);
+      group.add(new THREE.Mesh(stripeGeo, stripeMat));
 
-      // Gold payload placeholder core
+      // Gold payload placeholder core inside
       const coreMat = new THREE.MeshStandardMaterial({
         color: 0xf59e0b,
         metalness: 0.9,

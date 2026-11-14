@@ -8,6 +8,7 @@ import {
   ShowcaseComponent,
 } from "../../data/showcaseComponents";
 import { ShowcaseCard } from "./ShowcaseCard";
+import { Rocket, Play } from "lucide-react";
 
 type CategoryFilter =
   | "ALL"
@@ -287,7 +288,7 @@ export function ShowcaseView() {
             </span>
           </div>
           <h1 className="text-lg sm:text-xl font-bold font-mono text-sky-400 tracking-wider flex items-center gap-2 mt-1">
-            <span>🚀</span> NASA AEROSPACE VOXEL COMPONENT SHOWCASE
+            <Rocket className="w-5 h-5 text-sky-400" /> NASA AEROSPACE VOXEL COMPONENT SHOWCASE
           </h1>
           <p className="text-xs text-slate-400 mt-0.5">
             Procedural compound pixelated 3D models with physical systems engineering constraints (1 Block = 1U Form Factor Envelope)
@@ -297,9 +298,9 @@ export function ShowcaseView() {
         <div className="flex items-center gap-3">
           <Link
             href="/"
-            className="px-4 py-2 rounded-md bg-sky-600 hover:bg-sky-500 text-white border border-sky-400 font-mono text-xs font-bold shadow-lg shadow-sky-600/30 transition-all hover:scale-105"
+            className="px-4 py-2 rounded-md bg-sky-600 hover:bg-sky-500 text-white border border-sky-400 font-mono text-xs font-bold shadow-lg shadow-sky-600/30 transition-all hover:scale-105 flex items-center gap-1.5"
           >
-            🎮 ENTER 3D SPACEPORT & LAUNCH COMPLEX
+            <Play className="w-3.5 h-3.5" /> ENTER 3D SPACEPORT & LAUNCH COMPLEX
           </Link>
         </div>
       </header>

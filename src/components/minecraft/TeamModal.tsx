@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { Users, Award, Rocket, Zap, Radio, X } from "lucide-react";
 
 interface TeamModalProps {
   isOpen: boolean;
@@ -11,25 +12,25 @@ interface TeamModalProps {
 const ROLES = [
   {
     id: "commander",
-    icon: "🎖️",
+    icon: Award,
     title: "1. Flight Commander",
     desc: "Oversees Mission Profile, Orbital Trajectory Selection, Budget Allocation, and Final Launch Go/No-Go Decision.",
   },
   {
     id: "propulsion",
-    icon: "🚀",
+    icon: Rocket,
     title: "2. Propulsion & Structures Lead",
     desc: "Oversees Solid Rocket Boosters, Ion Thruster, RCS Microthrusters, Chassis Mass, and Thrust-to-Weight (TWR).",
   },
   {
     id: "power",
-    icon: "⚡",
+    icon: Zap,
     title: "3. EPS Power & Thermal Lead",
     desc: "Oversees Solar Array generation, LiFePO4 Battery sizing for 35-min orbital eclipse umbra, and thermal radiators.",
   },
   {
     id: "science",
-    icon: "📡",
+    icon: Radio,
     title: "4. Science & Communications Lead",
     desc: "Oversees Multispectral Camera, Spectrometers, Magnetometers, and DSN X-Band Downlink closed loop.",
   },
@@ -46,13 +47,13 @@ export function TeamModal({ isOpen, onClose, onRoleSelect }: TeamModalProps) {
         {/* Header */}
         <div className="flex justify-between items-center border-b border-slate-700 pb-2">
           <div className="text-base font-bold text-sky-400 flex items-center gap-2">
-            <span>👥</span> 4-Player Mission Team Command Station
+            <Users className="w-4 h-4 text-sky-400" /> 4-Player Mission Team Command Station
           </div>
           <button
             onClick={onClose}
-            className="bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-600 px-2 py-0.5 rounded text-xs transition-colors"
+            className="bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-600 px-2 py-0.5 rounded text-xs transition-colors flex items-center"
           >
-            ✕
+            <X className="w-3.5 h-3.5" />
           </button>
         </div>
 
@@ -64,6 +65,7 @@ export function TeamModal({ isOpen, onClose, onRoleSelect }: TeamModalProps) {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 my-1">
           {ROLES.map((role) => {
             const isSelected = activeRole === role.id;
+            const Icon = role.icon;
             return (
               <div
                 key={role.id}
@@ -78,7 +80,7 @@ export function TeamModal({ isOpen, onClose, onRoleSelect }: TeamModalProps) {
                 }`}
               >
                 <div className="text-xs font-bold text-sky-400 flex items-center gap-1.5">
-                  <span>{role.icon}</span> {role.title}
+                  <Icon className="w-4 h-4 text-sky-400 shrink-0" /> {role.title}
                 </div>
                 <p className="text-[10px] text-slate-400 mt-1 leading-snug">
                   {role.desc}

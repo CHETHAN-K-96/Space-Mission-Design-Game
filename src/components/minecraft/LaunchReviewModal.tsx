@@ -2,6 +2,7 @@
 
 import React, { useMemo } from "react";
 import { TelemetryData, MissionDef, DevStage } from "../../engine/minecraft/types";
+import { CheckCircle2, AlertTriangle, X, Rocket } from "lucide-react";
 
 interface LaunchReviewModalProps {
   isOpen: boolean;
@@ -87,23 +88,20 @@ export function LaunchReviewModal({
     }
 
     if (devStage === "STAGE_1_ROCKET") {
-      // Stage 1 (Easy Rocket Architecture Mode) - does not check internal satellite wiring!
-      if (!telemetry.hasPayloadContainer) {
-        errors.push(
-          "No Satellite Container or Payload Adapter found. Place an upper stage adapter or container slot."
-        );
+      // Stage 1 (Rocket Launch Vehicle) - does not check internal satellite wiring!
+      if (telemetry.hasPayloadContainer) {
         logs.push({
-          text: "FAIL: Missing top payload adapter or satellite container slot.",
-          type: "fail",
+          text: "PASS: Satellite payload container block mounted beneath nose fairing.",
+          type: "pass",
         });
       } else {
         logs.push({
-          text: "PASS: Top satellite payload container slot detected.",
-          type: "pass",
+          text: "INFO: Suborbital / Booster test flight (without payload container).",
+          type: "info",
         });
       }
       logs.push({
-        text: "STAGE 1 NOTE: Satellite sensor wiring and power closure deferred to Stage 2.",
+        text: "STAGE 1 NOTE: Aerodynamic rocket outer fuselage certified. Detailed satellite payloads integrate in Stage 2.",
         type: "info",
       });
     } else {
@@ -203,9 +201,9 @@ export function LaunchReviewModal({
           </div>
           <button
             onClick={onClose}
-            className="bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-600 px-2 py-0.5 rounded text-xs transition-colors"
+            className="bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-600 px-2 py-0.5 rounded text-xs transition-colors flex items-center gap-1"
           >
-            ✕ CLOSE
+            <X className="w-3.5 h-3.5" /> CLOSE
           </button>
         </div>
 
@@ -267,9 +265,9 @@ export function LaunchReviewModal({
                 onClose();
                 onConfirmLaunch();
               }}
-              className="bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-teal-500 hover:to-emerald-400 text-white font-bold text-xs px-5 py-2 border border-emerald-400 rounded shadow-lg shadow-emerald-600/40 transition-all hover:scale-105"
+              className="bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-teal-500 hover:to-emerald-400 text-white font-bold text-xs px-5 py-2 border border-emerald-400 rounded shadow-lg shadow-emerald-600/40 transition-all hover:scale-105 flex items-center gap-1.5"
             >
-              CONFIRM ORBITAL LAUNCH
+              <Rocket className="w-4 h-4" /> CONFIRM ORBITAL LAUNCH
             </button>
           )}
         </div>

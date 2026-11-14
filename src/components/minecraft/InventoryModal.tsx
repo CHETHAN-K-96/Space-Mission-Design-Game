@@ -5,6 +5,7 @@ import * as THREE from "three";
 import { COMPONENT_DEFS } from "../../engine/minecraft/constants";
 import { initMaterials } from "../../engine/minecraft/TextureGen";
 import { VoxelModelFactory } from "../../engine/minecraft/VoxelModelFactory";
+import { Box, Rocket, X } from "lucide-react";
 
 interface InventoryModalProps {
   isOpen: boolean;
@@ -310,13 +311,13 @@ export function InventoryModal({
         {/* Header */}
         <div className="flex justify-between items-center border-b border-slate-700 pb-2">
           <div className="text-sm sm:text-base font-bold text-sky-400 flex items-center gap-2">
-            <span>📦</span> NASA Component Catalog — 3D Interactive Previews
+            <Box className="w-4 h-4 text-sky-400" /> NASA Component Catalog — 3D Interactive Previews
           </div>
           <button
             onClick={onClose}
-            className="bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-600 px-2.5 py-0.5 rounded text-xs transition-colors"
+            className="bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-600 px-2 py-0.5 rounded text-xs transition-colors flex items-center"
           >
-            ✕
+            <X className="w-3.5 h-3.5" />
           </button>
         </div>
 
@@ -495,7 +496,7 @@ export function InventoryModal({
                 onClick={() => onEquip(selectedType)}
                 className="mt-3 bg-gradient-to-r from-sky-600 to-cyan-500 hover:from-sky-500 hover:to-cyan-400 text-white font-bold py-2 px-3 rounded text-xs transition-all shadow-md shadow-sky-600/30 flex items-center justify-center gap-1.5 hover:scale-[1.02]"
               >
-                <span>🚀</span> EQUIP TO ACTIVE HOTBAR SLOT
+                <Rocket className="w-3.5 h-3.5" /> EQUIP TO ACTIVE HOTBAR SLOT
               </button>
             </div>
           )}

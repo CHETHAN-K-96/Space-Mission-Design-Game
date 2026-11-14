@@ -2,6 +2,7 @@
 
 import React from "react";
 import { ShowcaseComponent } from "../../data/showcaseComponents";
+import { Wrench } from "lucide-react";
 
 interface ShowcaseCardProps {
   component: ShowcaseComponent;
@@ -52,8 +53,8 @@ export function ShowcaseCard({
 
         {/* Voxel Assembly Recipe */}
         <div className="bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-slate-300">
-          <div className="font-bold text-cyan-400 mb-1 font-mono text-[11px] flex items-center gap-1">
-            <span>🛠️</span> VOXEL ASSEMBLY BLUEPRINT:
+          <div className="font-bold text-cyan-400 mb-1 font-mono text-[11px] flex items-center gap-1.5">
+            <Wrench className="w-3.5 h-3.5 text-cyan-400" /> VOXEL ASSEMBLY BLUEPRINT:
           </div>
           <div>{component.recipe}</div>
         </div>

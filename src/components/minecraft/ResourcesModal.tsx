@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { BookOpen, X } from "lucide-react";
 
 interface ResourcesModalProps {
   isOpen: boolean;
@@ -43,13 +44,13 @@ export function ResourcesModal({ isOpen, onClose }: ResourcesModalProps) {
         {/* Header */}
         <div className="flex justify-between items-center border-b border-slate-700 pb-2">
           <div className="text-base font-bold text-sky-400 flex items-center gap-2">
-            <span>📚</span> NASA Space Apps Challenge Reference Frameworks
+            <BookOpen className="w-4 h-4 text-sky-400" /> NASA Space Apps Challenge Reference Frameworks
           </div>
           <button
             onClick={onClose}
-            className="bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-600 px-2 py-0.5 rounded text-xs transition-colors"
+            className="bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-600 px-2 py-0.5 rounded text-xs transition-colors flex items-center"
           >
-            ✕
+            <X className="w-3.5 h-3.5" />
           </button>
         </div>
 
