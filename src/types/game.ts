@@ -1,10 +1,23 @@
-export type SubsystemType = "STRUCTURE" | "AVIONICS" | "POWER" | "PROPULSION" | "COMMS" | "PAYLOAD";
+export type SubsystemType =
+  | "STRUCTURE"
+  | "AVIONICS"
+  | "POWER"
+  | "PROPULSION"
+  | "COMMS"
+  | "PAYLOAD"
+  | "ROCKET"
+  | "EPS"
+  | "STORAGE"
+  | "BUS"
+  | "ADCS"
+  | "THERMAL";
+
 export type DifficultyMode = "easy" | "normal" | "hard";
 
 export interface SpacecraftComponent {
   id: string;
   name: string;
-  category: "Engine" | "Payload" | "Structure" | "Avionics" | "Power" | "Comms";
+  category: "Engine" | "Payload" | "Structure" | "Avionics" | "Power" | "Comms" | "Rocket";
   subsystem: SubsystemType;
   mass_kg: number;
   power_w: number;
