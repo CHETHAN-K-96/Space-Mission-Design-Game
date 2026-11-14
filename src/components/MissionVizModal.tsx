@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import confetti from "canvas-confetti";
 import { useGame } from "../context/GameContext";
@@ -8,12 +8,9 @@ import {
   Rocket,
   CheckCircle2,
   XCircle,
-  ShieldAlert,
   RotateCcw,
   Sparkles,
   Award,
-  Layers,
-  Activity,
   Terminal,
 } from "lucide-react";
 
@@ -26,6 +23,106 @@ export function MissionVizModal() {
     activeMission,
     closeModal,
   } = useGame();
+
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+
+  // Draw 2D canvas Earth-to-Space & Moon Trajectory
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    const w = canvas.width;
+    const h = canvas.height;
+    ctx.clearRect(0, 0, w, h);
+
+    // Starfield background
+    ctx.fillStyle = "#ffffff";
+    for (let i = 0; i < 40; i++) {
+      const sx = (i * 37) % w;
+      const sy = (i * 23) % h;
+      ctx.fillRect(sx, sy, 1, 1);
+    }
+
+    // 1. Earth at bottom-left
+    ctx.fillStyle = "#1d4ed8";
+    ctx.beginPath();
+    ctx.arc(60, h + 35, 75, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Atmosphere Glow
+    ctx.strokeStyle = "#38bdf8";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(60, h + 35, 78, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // 2. Moon at top-right
+    ctx.fillStyle = "#94a3b8";
+    ctx.beginPath();
+    ctx.arc(w - 70, 45, 20, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#64748b";
+    ctx.beginPath();
+    ctx.arc(w - 74, 40, 5, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Labels
+    ctx.font = "10px monospace";
+    ctx.fillStyle = "#38bdf8";
+    ctx.fillText("EARTH", 38, h - 15);
+    ctx.fillStyle = "#cbd5e1";
+    ctx.fillText("MOON", w - 85, 20);
+
+    // 3. Hohmann Transfer Ellipse Arc
+    ctx.beginPath();
+    ctx.moveTo(60, h - 42);
+    ctx.bezierCurveTo(90, 80, 240, 25, w - 70, 45);
+    ctx.strokeStyle = "rgba(52, 211, 153, 0.4)";
+    ctx.lineWidth = 2;
+    ctx.setLineDash([4, 4]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // 4. Craft Position along trajectory based on stage
+    let progress = 0;
+    if (launchStage === "PAD_IGNITION") progress = 0.05;
+    else if (launchStage === "MAX_Q") progress = 0.2;
+    else if (launchStage === "STAGE_SEP") progress = 0.4;
+    else if (launchStage === "LEO_PARKING") progress = 0.6;
+    else if (launchStage === "TLI_BURN") progress = 0.85;
+    else if (launchStage === "LUNAR_ORBIT" || launchStage === "FINAL_REPORT") progress = 1.0;
+
+    const p0 = { x: 60, y: h - 42 };
+    const p1 = { x: 90, y: 80 };
+    const p2 = { x: 240, y: 25 };
+    const p3 = { x: w - 70, y: 45 };
+    const t = progress;
+
+    const cx =
+      Math.pow(1 - t, 3) * p0.x +
+      3 * Math.pow(1 - t, 2) * t * p1.x +
+      3 * (1 - t) * Math.pow(t, 2) * p2.x +
+      Math.pow(t, 3) * p3.x;
+    const cy =
+      Math.pow(1 - t, 3) * p0.y +
+      3 * Math.pow(1 - t, 2) * t * p1.y +
+      3 * (1 - t) * Math.pow(t, 2) * p2.y +
+      Math.pow(t, 3) * p3.y;
+
+    // Draw Spacecraft Position
+    ctx.fillStyle = "#38bdf8";
+    ctx.beginPath();
+    ctx.arc(cx, cy, 6, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.strokeStyle = "#34d399";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(cx, cy, 10, 0, Math.PI * 2);
+    ctx.stroke();
+  }, [launchStage]);
 
   useEffect(() => {
     if (launchStage === "FINAL_REPORT" && validationReport?.passed) {
@@ -47,7 +144,7 @@ export function MissionVizModal() {
           initial={{ opacity: 0, scale: 0.95, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 20 }}
-          className="w-full max-w-3xl rounded-2xl border border-slate-800 bg-slate-900 shadow-2xl overflow-hidden font-mono"
+          className="w-full max-w-2xl rounded-2xl border border-slate-800 bg-slate-900 shadow-2xl overflow-hidden font-mono"
         >
           {/* Top Bar */}
           <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800 bg-slate-950/80">
@@ -58,166 +155,86 @@ export function MissionVizModal() {
                 }`}
               />
               <span className="text-xs font-bold uppercase tracking-wider text-slate-200">
-                NASA Mission Viz: Launch Simulation & Telemetry Stream
+                NASA Flight Review: {activeMission.name}
               </span>
             </div>
             <button
               onClick={closeModal}
-              className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 text-sm transition-colors"
+              className="text-slate-400 hover:text-white text-xs font-bold"
             >
               ✕
             </button>
           </div>
 
-          <div className="p-6">
-            {launchStage !== "FINAL_REPORT" ? (
-              // ANIMATED LAUNCH SEQUENCE
-              <div className="py-12 flex flex-col items-center justify-center text-center space-y-6">
-                <div className="relative w-36 h-36 rounded-full border-4 border-dashed border-cyan-500/50 flex items-center justify-center animate-spin">
-                  <Rocket className="h-14 w-14 text-cyan-400 -rotate-45" />
-                </div>
-
-                <div className="space-y-2">
-                  <div className="text-xl font-black tracking-widest text-white uppercase">
-                    {launchStage === "COUNTDOWN" && "T-Minus 00:00:03... Main Engine Ignition"}
-                    {launchStage === "MAX_Q" && "Passing Max-Q Aerodynamic Boundary"}
-                    {launchStage === "STAGE_SEP" && "Fairing Jettison & Stage Separation"}
-                    {launchStage === "ORBITAL_INSERTION" && "Deploying Solar Arrays & Trans-Lunar Injection"}
-                  </div>
-                  <p className="text-xs text-slate-400">
-                    Synchronizing live telemetry with NASA Deep Space Network...
-                  </p>
-                </div>
-
-                {/* Animated Progress Bar */}
-                <div className="w-72 bg-slate-800 h-2 rounded-full overflow-hidden">
-                  <motion.div
-                    className="h-full bg-gradient-to-r from-cyan-500 to-blue-500"
-                    initial={{ width: "0%" }}
-                    animate={{
-                      width:
-                        launchStage === "COUNTDOWN"
-                          ? "25%"
-                          : launchStage === "MAX_Q"
-                          ? "50%"
-                          : launchStage === "STAGE_SEP"
-                          ? "75%"
-                          : "100%",
-                    }}
-                    transition={{ duration: 1.2 }}
-                  />
-                </div>
+          <div className="p-6 space-y-4">
+            {/* Trajectory Canvas Display */}
+            <div className="bg-slate-950 border border-slate-800 rounded-xl p-3">
+              <div className="flex justify-between text-[11px] text-slate-400 mb-2 font-mono">
+                <span className="text-cyan-400 font-bold">FLIGHT STAGE: {launchStage}</span>
+                <span>
+                  {launchStage === "LUNAR_ORBIT" || launchStage === "FINAL_REPORT"
+                    ? "ALT: 384,400 km | V: 1.63 km/s"
+                    : launchStage === "TLI_BURN"
+                    ? "ALT: 3,800 km | V: 11.18 km/s"
+                    : "ALT: 250 km | V: 7.78 km/s"}
+                </span>
               </div>
-            ) : (
-              // FINAL SCORECARD & MISSION REPORT
-              <div className="space-y-6">
-                {/* Status Callout Banner */}
+              <canvas
+                ref={canvasRef}
+                width={560}
+                height={160}
+                className="w-full h-40 bg-slate-950 rounded-lg"
+              />
+            </div>
+
+            {/* Flight Diagnostics Terminal Log */}
+            <div className="bg-slate-950/90 border border-slate-800 rounded-xl p-4 h-36 overflow-y-auto text-xs space-y-1">
+              <div className="text-slate-500 flex items-center gap-1 mb-2">
+                <Terminal className="h-3 w-3 text-cyan-400" /> Cape Canaveral Range Telemetry Feed:
+              </div>
+              {validationReport.logs.map((log, idx) => (
                 <div
-                  className={`p-4 rounded-xl border flex items-start gap-4 ${
-                    validationReport.passed
-                      ? "bg-emerald-950/40 border-emerald-500/50 text-emerald-200"
-                      : "bg-rose-950/40 border-rose-500/50 text-rose-200"
-                  }`}
+                  key={idx}
+                  className={
+                    log.startsWith("PASS")
+                      ? "text-emerald-400"
+                      : log.startsWith("FAIL")
+                      ? "text-rose-400 font-bold"
+                      : "text-slate-300"
+                  }
                 >
-                  {validationReport.passed ? (
-                    <CheckCircle2 className="h-7 w-7 text-emerald-400 shrink-0 mt-0.5" />
-                  ) : (
-                    <ShieldAlert className="h-7 w-7 text-rose-400 shrink-0 mt-0.5" />
-                  )}
-
-                  <div className="space-y-1">
-                    <h4 className="text-base font-bold uppercase tracking-wide">
-                      {validationReport.passed
-                        ? "MISSION SUCCESS: Flight Readiness Certified"
-                        : "MISSION ABORT: Systems Engineering Failure"}
-                    </h4>
-                    <p className="text-xs text-slate-300">
-                      {validationReport.passed
-                        ? `Spacecraft achieved mission trajectory! Concept Maturity Level elevated to ${validationReport.cmlAchieved}. Score: ${validationReport.score} pts.`
-                        : "Pre-flight checks flagged physical and orbital constraints violations:"}
-                    </p>
-
-                    {validationReport.errors.length > 0 && (
-                      <ul className="mt-2 space-y-1 text-xs text-rose-300 font-semibold list-disc list-inside">
-                        {validationReport.errors.map((err, i) => (
-                          <li key={i}>{err}</li>
-                        ))}
-                      </ul>
-                    )}
-                  </div>
+                  {log}
                 </div>
+              ))}
+            </div>
 
-                {/* Scorecard Metrics Grid */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
-                  <div className="p-3 bg-slate-950/70 rounded-xl border border-slate-800">
-                    <span className="text-[10px] text-slate-400 uppercase">Mass Dry/Wet</span>
-                    <div className="text-base font-bold text-white mt-1">
-                      {telemetry.total_mass_kg} kg
-                    </div>
-                    <span className="text-[9px] text-slate-500">CubeSat Bus</span>
+            {/* Status Footer */}
+            <div className="flex items-center justify-between pt-2">
+              <div className="flex items-center gap-2">
+                <Award className="h-5 w-5 text-amber-400" />
+                <div>
+                  <div className="text-[10px] text-slate-400">CERTIFICATION RATING</div>
+                  <div className="text-xs font-bold text-emerald-400">
+                    {validationReport.cmlAchieved}
                   </div>
-
-                  <div className="p-3 bg-slate-950/70 rounded-xl border border-slate-800">
-                    <span className="text-[10px] text-slate-400 uppercase">Budget Remaining</span>
-                    <div
-                      className={`text-base font-bold mt-1 ${
-                        telemetry.budget_m >= 0 ? "text-emerald-400" : "text-rose-400"
-                      }`}
-                    >
-                      ${telemetry.budget_m}M
-                    </div>
-                    <span className="text-[9px] text-slate-500">Reserve Fund</span>
-                  </div>
-
-                  <div className="p-3 bg-slate-950/70 rounded-xl border border-slate-800">
-                    <span className="text-[10px] text-slate-400 uppercase">Power Margin</span>
-                    <div className="text-base font-bold text-amber-400 mt-1">
-                      +{telemetry.net_power_watts} W
-                    </div>
-                    <span className="text-[9px] text-slate-500">Day/Night Orbit</span>
-                  </div>
-
-                  <div className="p-3 bg-slate-950/70 rounded-xl border border-slate-800">
-                    <span className="text-[10px] text-slate-400 uppercase">Thrust-To-Weight</span>
-                    <div className="text-base font-bold text-cyan-400 mt-1">
-                      {telemetry.twr}
-                    </div>
-                    <span className="text-[9px] text-slate-500">Lift Capability</span>
-                  </div>
-                </div>
-
-                {/* Telemetry Stream Log */}
-                <div className="p-3 bg-slate-950 rounded-xl border border-slate-800/80 max-h-36 overflow-y-auto text-[11px] font-mono space-y-1">
-                  <div className="text-slate-500 text-[10px] uppercase font-bold tracking-wider mb-1 flex items-center gap-1">
-                    <Terminal className="h-3 w-3" /> NASA Telemetry Event Stream:
-                  </div>
-                  {validationReport.logs.map((log, i) => (
-                    <div
-                      key={i}
-                      className={
-                        log.startsWith("FAIL")
-                          ? "text-rose-400 font-semibold"
-                          : log.startsWith("PASS")
-                          ? "text-emerald-400"
-                          : "text-slate-400"
-                      }
-                    >
-                      {log}
-                    </div>
-                  ))}
-                </div>
-
-                {/* Return Control */}
-                <div className="flex items-center justify-end gap-3 pt-2">
-                  <button
-                    onClick={closeModal}
-                    className="px-5 py-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-white transition-colors flex items-center gap-2"
-                  >
-                    <RotateCcw className="h-3.5 w-3.5" /> Return to Assembly Grid
-                  </button>
                 </div>
               </div>
-            )}
+
+              <div className="flex items-center gap-2">
+                <a
+                  href="/minecraft.html"
+                  className="px-4 py-2 rounded-lg bg-blue-600/30 hover:bg-blue-600/50 border border-blue-500/40 text-blue-300 text-xs font-bold flex items-center gap-1.5 transition-colors"
+                >
+                  <Rocket className="h-3.5 w-3.5" /> Open 3D Spaceport
+                </a>
+                <button
+                  onClick={closeModal}
+                  className="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold transition-colors"
+                >
+                  Dismiss
+                </button>
+              </div>
+            </div>
           </div>
         </motion.div>
       </div>
