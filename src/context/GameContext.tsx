@@ -154,9 +154,19 @@ const sfx = new SoundFX();
 export function GameProvider({ children }: { children: ReactNode }) {
   const [activeMission, setActiveMission] = useState<MissionScenario>(MISSIONS[0]);
   const [difficulty, setDifficulty] = useState<DifficultyMode>("normal");
-  const [grid, setGrid] = useState<GridSlot[]>(() =>
-    Array(GRID_SIZE * GRID_SIZE).fill(null)
-  );
+  const [grid, setGrid] = useState<GridSlot[]>(() => {
+    const initialGrid: GridSlot[] = Array(GRID_SIZE * GRID_SIZE).fill(null);
+    const byId = (id: string) => COMPONENT_CATALOG.find((c) => c.id === id) || null;
+    initialGrid[2] = byId("avionics_cdh");
+    initialGrid[7] = byId("bus_frame");
+    initialGrid[6] = byId("solar_array");
+    initialGrid[8] = byId("solar_array");
+    initialGrid[11] = byId("battery_pack");
+    initialGrid[12] = byId("patch_antenna");
+    initialGrid[13] = byId("magnetometer");
+    initialGrid[17] = byId("booster");
+    return initialGrid;
+  });
   const [selectedComponent, setSelectedComponent] = useState<SpacecraftComponent | null>(
     COMPONENT_CATALOG[0]
   );
