@@ -69,6 +69,7 @@ export interface MissionDef {
     whyImportant: string;
     engineeringDeliverables: string[];
     threatsAndRisks: string;
+    storyLines?: string[];
   };
   historicalFlight: HistoricalFlightInfo;
   trajectoryType: "LEO_POLAR" | "DEEP_SPACE_ASTEROID" | "SUN_EARTH_L2" | "TRANS_LUNAR";

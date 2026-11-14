@@ -25,7 +25,6 @@ import { TeamModal } from "./TeamModal";
 import { ResourcesModal } from "./ResourcesModal";
 import { MissionStoryIntroModal } from "./MissionStoryIntroModal";
 import { MissionDebriefModal } from "./MissionDebriefModal";
-import { MissionTrajectoryViz } from "./MissionTrajectoryViz";
 import { MissionDebriefScore } from "../../engine/minecraft/types";
 
 const INITIAL_TELEMETRY: TelemetryData = {
@@ -485,16 +484,6 @@ export function MinecraftGame() {
         altKm={launchTelem.altKm}
         velKmh={launchTelem.velKmh}
         mach={launchTelem.mach}
-      />
-
-      {/* Mission Orbital Trajectory & Staging Visualization */}
-      <MissionTrajectoryViz
-        isVisible={launchTelem.isVisible}
-        mission={activeMission}
-        flightTimeSec={launchFlightSec}
-        stageName={launchTelem.stageName}
-        altKm={launchTelem.altKm || 0}
-        velKmh={launchTelem.velKmh || 0}
       />
 
       {/* Component Hover Tooltip */}

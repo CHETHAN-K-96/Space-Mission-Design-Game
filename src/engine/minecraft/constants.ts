@@ -558,6 +558,12 @@ export const MISSIONS: Record<string, MissionDef> = {
       ],
       threatsAndRisks:
         "Vandenberg coastal fog and transonic acoustic vibrations during Max-Q passage; battery depletion during 35-minute orbital night occultations.",
+      storyLines: [
+        "Rising global sea levels threaten coastal cities and over 600 million residents worldwide.",
+        "Flight Directive: Assemble a sleek Falcon 9 single-core rocket without side boosters to deploy the Sentinel-6 ocean radar altimeter.",
+        "Crucial Constraints: Hard budget ceiling of $160M, minimum liftoff thrust of 850 kN, and target 1,336 km high-inclination polar orbit.",
+        "Stage 1 Architecture: Stack Merlin Octaweb cluster, 4 RP-1 fuel tanks, interstage ring, upper vacuum stage, and single payload container block beneath fairing nosecone."
+      ],
     },
     historicalFlight: {
       missionName: "Sentinel-6 Michael Freilich",
@@ -623,6 +629,13 @@ export const MISSIONS: Record<string, MissionDef> = {
       ],
       threatsAndRisks:
         "Deep space radiation belt degradation, 2.7 AU solar irradiance attenuation (requiring high-efficiency solar wings), and high-velocity micrometeroid bombardment.",
+      storyLines: [
+        "Deep in the main asteroid belt orbits 16 Psyche—an untouched metallic world representing the exposed iron core of a primordial protoplanet.",
+        "Humanity has never explored a world made of solid metal; Psyche reveals how planetary magnetic shields originate.",
+        "Flight Directive: Construct the SpaceX Falcon Heavy launcher with twin full-height side booster cores matching the central stage.",
+        "Crucial Constraints: Strict $290M budget ceiling, minimum 1,200 kN thrust, and dual 6-block side booster stacks to achieve Earth escape velocity.",
+        "Objective: Deploy the deep-space ion propulsion probe on an interplanetary trajectory for a Mars gravitational assist."
+      ],
     },
     historicalFlight: {
       missionName: "NASA Psyche Mission",
@@ -689,6 +702,13 @@ export const MISSIONS: Record<string, MissionDef> = {
       ],
       threatsAndRisks:
         "Sun-Earth L2 is 1.5 million kilometers away—far beyond astronaut servicing range. Zero margin for deployment error.",
+      storyLines: [
+        "13.5 billion years ago, the first stars ignited out of the cosmic dark age, sending faint infrared photons across expanding spacetime.",
+        "The James Webb Space Telescope requires an ultra-heavy launcher to reach the Sun-Earth L2 Lagrange point 1.5 million kilometers away.",
+        "Flight Directive: Build the Ariane 5 ECA launcher with massive twin solid boosters spanning more than half the rocket's height.",
+        "Crucial Constraints: Capped at $520M budget, minimum 1,800 kN thrust, Vulcain cryogenic core, and dual 6-block-tall solid rocket boosters.",
+        "Objective: Enclose the folded telescope payload in a wide aerodynamic fairing to protect delicate beryllium mirrors from acoustic shock."
+      ],
     },
     historicalFlight: {
       missionName: "James Webb Space Telescope (JWST)",
@@ -754,6 +774,13 @@ export const MISSIONS: Record<string, MissionDef> = {
       ],
       threatsAndRisks:
         "Deep cislunar space vacuum, extreme thermal shifts from +120°C in sunlight to -230°C in polar shadow, and hypersonic atmospheric re-entry at 40,000 km/h.",
+      storyLines: [
+        "Fifty years after Apollo, humanity returns to the Moon to establish permanent science outposts at the lunar South Pole.",
+        "Permanently shadowed polar craters conceal billions of tons of water ice—vital for life support and hydrogen rocket propellant.",
+        "Flight Directive: Assemble NASA's Space Launch System (SLS Block 1) featuring 4x RS-25 hydrolox core engines and dual 7-block solid rocket boosters.",
+        "Crucial Constraints: Maximum budget of $880M, minimum 2,400 kN thrust, and multi-stage cryogenic tanks to escape Earth's gravity well.",
+        "Objective: Accelerate the Orion spacecraft through Trans-Lunar Injection (TLI) to reach lunar orbit."
+      ],
     },
     historicalFlight: {
       missionName: "Artemis I / Orion Exploration Mission",
@@ -815,6 +842,11 @@ export const MISSIONS: Record<string, MissionDef> = {
         "Validate aerodynamic integrity across custom flight envelopes.",
       ],
       threatsAndRisks: "Unconstrained experimental designs may encounter extreme structural loads.",
+      storyLines: [
+        "Welcome to the JPL Mission Design Lab Skunkworks: Flight certification constraints have been unlocked for freeform prototyping.",
+        "Experiment with novel rocket architectures, custom staging ratios, and thrust-to-weight margins.",
+        "Objective: Freely design, test, and launch custom spacecraft within an unrestricted engineering sandbox."
+      ],
     },
     historicalFlight: {
       missionName: "NASA Advanced Concepts Lab",
