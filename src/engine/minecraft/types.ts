@@ -19,6 +19,35 @@ export interface ComponentDef {
   color: string;
 }
 
+export interface HistoricalFlightInfo {
+  missionName: string;
+  agency: string;
+  launchDate: string;
+  launchTimeUTC: string;
+  launchSite: string;
+  pad: string;
+  weather: {
+    tempC: number;
+    conditions: string;
+    windSpeedKmh: number;
+    windDirection: string;
+    visibilityKm: number;
+    favorablePercentage: number;
+  };
+  rocketName: string;
+  rocketStages: string;
+  orbitProfile: {
+    orbitName: string;
+    perigeeKm: number;
+    apogeeKm: number;
+    inclinationDeg: number;
+    orbitalPeriodMin: number;
+    trajectoryDescription: string;
+  };
+  historicalOutcome: string;
+  realBudgetM: number;
+}
+
 export interface MissionDef {
   name: string;
   target: string;
@@ -34,6 +63,37 @@ export interface MissionDef {
   stage1_desc?: string;
   stage2_desc?: string;
   recommended_rocket?: string;
+  storyline: {
+    chapterTitle: string;
+    narrativeIntro: string;
+    whyImportant: string;
+    engineeringDeliverables: string[];
+    threatsAndRisks: string;
+  };
+  historicalFlight: HistoricalFlightInfo;
+  trajectoryType: "LEO_POLAR" | "DEEP_SPACE_ASTEROID" | "SUN_EARTH_L2" | "TRANS_LUNAR";
+}
+
+export interface MissionDebriefScore {
+  totalScore: number;
+  grade: "A+" | "A" | "B" | "C" | "FAIL";
+  verdict: string;
+  breakdown: {
+    budgetEfficiency: number;
+    structuralMass: number;
+    propulsionTWR: number;
+    powerBalance: number;
+    scienceAlignment: number;
+  };
+  telemetrySnapshot: {
+    finalAltKm: number;
+    maxVelKmh: number;
+    maxG: string;
+    flightDurationSec: number;
+    costSpentM: number;
+    massKg: number;
+    twr: number;
+  };
 }
 
 export interface TelemetryData {

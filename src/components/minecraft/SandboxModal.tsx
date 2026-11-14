@@ -2,6 +2,8 @@
 
 import React, { useState } from "react";
 import { MissionDef } from "../../engine/minecraft/types";
+import { MISSIONS } from "../../engine/minecraft/constants";
+import { Sliders, X } from "lucide-react";
 
 interface SandboxModalProps {
   isOpen: boolean;
@@ -22,19 +24,16 @@ export function SandboxModal({
   if (!isOpen) return null;
 
   const handleApply = () => {
+    const base = MISSIONS["sandbox_mode"];
     const customMission: MissionDef = {
-      name: "⚙️ Custom Engineering Sandbox",
+      ...base,
+      name: "Custom Engineering Sandbox",
       target: "Custom User Orbit",
       budget_m: budget,
       min_thrust_kn: thrust,
       min_batteries: battery,
       min_payloads: 1,
       gravityMultiplier: parseFloat(gravity),
-      require_closed_comms: false,
-      counterpart: "NASA Mission Design Lab (MDL) Advanced Concept Studies",
-      scientificGoal:
-        "Freeform systems engineering experimentation with custom resource constraints and gravitational environments.",
-      desc: "Custom sandbox scenario with user-configured parameters.",
     };
     onApply(customMission);
     onClose();
@@ -46,13 +45,14 @@ export function SandboxModal({
         {/* Header */}
         <div className="flex justify-between items-center border-b border-slate-700 pb-2">
           <div className="text-base font-bold text-sky-400 flex items-center gap-2">
-            <span>⚙️</span> Custom Sandbox Constraints Editor
+            <Sliders className="w-4 h-4 text-sky-400" />
+            <span>Custom Sandbox Constraints Editor</span>
           </div>
           <button
             onClick={onClose}
-            className="bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-600 px-2 py-0.5 rounded text-xs transition-colors"
+            className="p-1 rounded text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
           >
-            ✕
+            <X className="w-4 h-4" />
           </button>
         </div>
 

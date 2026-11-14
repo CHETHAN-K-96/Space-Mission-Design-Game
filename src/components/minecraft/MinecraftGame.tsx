@@ -23,6 +23,10 @@ import { MissionDossierModal } from "./MissionDossierModal";
 import { SandboxModal } from "./SandboxModal";
 import { TeamModal } from "./TeamModal";
 import { ResourcesModal } from "./ResourcesModal";
+import { MissionStoryIntroModal } from "./MissionStoryIntroModal";
+import { MissionDebriefModal } from "./MissionDebriefModal";
+import { MissionTrajectoryViz } from "./MissionTrajectoryViz";
+import { MissionDebriefScore } from "../../engine/minecraft/types";
 
 const INITIAL_TELEMETRY: TelemetryData = {
   blocksCount: 0,
@@ -90,6 +94,10 @@ export function MinecraftGame() {
   const [showSandbox, setShowSandbox] = useState(false);
   const [showTeam, setShowTeam] = useState(false);
   const [showResources, setShowResources] = useState(false);
+  const [showStoryIntro, setShowStoryIntro] = useState(false);
+  const [showDebrief, setShowDebrief] = useState(false);
+  const [debriefScore, setDebriefScore] = useState<MissionDebriefScore | null>(null);
+  const [launchFlightSec, setLaunchFlightSec] = useState(0);
 
   // Launch Telemetry overlay
   const [countdown, setCountdown] = useState<number | null>(null);
@@ -176,6 +184,12 @@ export function MinecraftGame() {
           velKmh,
           mach,
         });
+        setLaunchFlightSec((prev) => prev + 0.1);
+      },
+      onLaunchComplete: (debrief, m) => {
+        document.exitPointerLock?.();
+        setDebriefScore(debrief);
+        setShowDebrief(true);
       },
       onLaunchFinish: () => {
         setLaunchTelem((prev) => ({ ...prev, isVisible: false }));
@@ -197,7 +211,9 @@ export function MinecraftGame() {
     showDossier ||
     showSandbox ||
     showTeam ||
-    showResources;
+    showResources ||
+    showStoryIntro ||
+    showDebrief;
 
   // Global Keydown Handler for Modals & Shortcuts
   useEffect(() => {
@@ -211,6 +227,8 @@ export function MinecraftGame() {
           setShowSandbox(false);
           setShowTeam(false);
           setShowResources(false);
+          setShowStoryIntro(false);
+          setShowDebrief(false);
           return;
         }
         if (gameStarted) {
@@ -289,6 +307,8 @@ export function MinecraftGame() {
       const m = MISSIONS[missionKey];
       setActiveMission(m);
       simRef.current?.setMission(missionKey);
+      document.exitPointerLock?.();
+      setShowStoryIntro(true);
       showNotification(`Switched Mission: ${m.name}`);
     }
   };
@@ -334,6 +354,7 @@ export function MinecraftGame() {
 
   const handleConfirmLaunch = () => {
     setShowLaunchReview(false);
+    setLaunchFlightSec(0);
     simRef.current?.startLaunchSequence();
   };
 
@@ -421,6 +442,10 @@ export function MinecraftGame() {
           document.exitPointerLock?.();
           setShowResources(true);
         }}
+        onOpenStory={() => {
+          document.exitPointerLock?.();
+          setShowStoryIntro(true);
+        }}
         onToggleFlight={handleToggleFlight}
         onClearCraft={handleClearCraft}
       />
@@ -462,6 +487,16 @@ export function MinecraftGame() {
         mach={launchTelem.mach}
       />
 
+      {/* Mission Orbital Trajectory & Staging Visualization */}
+      <MissionTrajectoryViz
+        isVisible={launchTelem.isVisible}
+        mission={activeMission}
+        flightTimeSec={launchFlightSec}
+        stageName={launchTelem.stageName}
+        altKm={launchTelem.altKm || 0}
+        velKmh={launchTelem.velKmh || 0}
+      />
+
       {/* Component Hover Tooltip */}
       <ComponentTooltip blockType={hoveredBlockType} />
 
@@ -480,9 +515,40 @@ export function MinecraftGame() {
         onEnterGame={handleEnterGame}
         onLoadCertifiedCraft={handleLoadCertifiedCraft}
         onCycleTime={handleCycleTime}
+        onOpenStory={() => {
+          document.exitPointerLock?.();
+          setShowStoryIntro(true);
+        }}
       />
 
       {/* Modals */}
+      <MissionStoryIntroModal
+        isOpen={showStoryIntro}
+        onClose={() => setShowStoryIntro(false)}
+        mission={activeMission}
+        onEnterVab={() => {
+          setShowStoryIntro(false);
+          setGameStarted(true);
+          setIsPaused(false);
+          try {
+            canvasRef.current?.requestPointerLock?.();
+          } catch {}
+        }}
+      />
+
+      <MissionDebriefModal
+        isOpen={showDebrief}
+        onClose={() => setShowDebrief(false)}
+        mission={activeMission}
+        debriefScore={debriefScore}
+        onReturnToVab={() => {
+          setShowDebrief(false);
+          try {
+            canvasRef.current?.requestPointerLock?.();
+          } catch {}
+        }}
+      />
+
       <InventoryModal
         isOpen={showInventory}
         onClose={() => setShowInventory(false)}

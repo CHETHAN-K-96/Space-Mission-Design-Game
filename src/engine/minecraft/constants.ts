@@ -528,20 +528,69 @@ export const COMPONENT_DEFS: Record<number, ComponentDef> = {
 export const MISSIONS: Record<string, MissionDef> = {
   earth_sentinel: {
     name: "Earth Observation Sentinel-6",
-    target: "Sun-Synchronous Polar Orbit (550 km)",
+    target: "Sun-Synchronous Polar Orbit (1,336 km)",
     budget_m: 160.0,
     min_thrust_kn: 800,
     min_batteries: 1,
     min_payloads: 1,
     gravityMultiplier: 1.0,
     require_closed_comms: true,
-    counterpart: "NASA/USGS Landsat-9 & ESA Sentinel-2 Constellation",
+    counterpart: "NASA/ESA Sentinel-6 Michael Freilich Altimetry Mission",
     scientificGoal:
-      "Provide high-cadence multispectral imaging of agricultural health, ocean temperatures, and polar sea ice retreat.",
-    desc: "Stage 1: Build a 2-stage Falcon 9 launcher with core fuel tanks, vacuum engine, and upper payload container. Stage 2: Integrate multispectral imager and GaAs solar wings.",
-    stage1_desc: "Assemble 2-stage rocket: Merlin engine cluster, RP-1/LOX tanks, vacuum engine, and top satellite container slot.",
-    stage2_desc: "Integrate satellite core: Multispectral Earth Imager, LiFePO4 battery, and GaAs solar wings.",
+      "Monitor global ocean temperature shifts, polar sea ice retreat, and millimeter-accuracy sea level rise.",
+    desc: "Stage 1: Assemble a 2-stage Falcon 9 launcher with core tanks, vacuum engine, and top satellite container slot. Stage 2: Integrate multispectral imaging and GaAs solar wings.",
+    stage1_desc:
+      "Assemble 2-stage rocket: Merlin engine cluster, RP-1/LOX tanks, vacuum engine, and top satellite container slot.",
+    stage2_desc:
+      "Integrate satellite core: Multispectral Earth Imager, LiFePO4 battery, and GaAs solar wings.",
     recommended_rocket: "Falcon 9 (2-Stage Medium-Lift Launcher)",
+    storyline: {
+      chapterTitle: "Chapter 1: Eyes on Our Fragile Blue World",
+      narrativeIntro:
+        "Rising global ocean temperatures and unprecedented polar ice melt threaten coastal cities worldwide. NASA JPL and the European Space Agency require a precision altimetry spacecraft in polar orbit to monitor global sea-level variance down to the millimeter.",
+      whyImportant:
+        "Without continuous orbital altimetry, climate scientists and disaster response agencies cannot anticipate extreme hurricane surges, ocean heat waves, or inland flood crises.",
+      engineeringDeliverables: [
+        "Assemble a 2-stage aerodynamic Falcon 9 launch vehicle within $160M budget.",
+        "Achieve TWR >= 1.0 to escape Earth's gravity well.",
+        "Mount the top satellite payload slot beneath a protective aerodynamic fairing nosecone.",
+        "In Stage 2, integrate high-cadence multispectral imaging and continuous solar battery power.",
+      ],
+      threatsAndRisks:
+        "Vandenberg coastal fog and transonic acoustic vibrations during Max-Q passage; battery depletion during 35-minute orbital night occultations.",
+    },
+    historicalFlight: {
+      missionName: "Sentinel-6 Michael Freilich",
+      agency: "NASA / ESA / EUMETSAT / NOAA",
+      launchDate: "November 21, 2020",
+      launchTimeUTC: "17:17:08 UTC (09:17 PST)",
+      launchSite: "Vandenberg Space Force Base, California",
+      pad: "Space Launch Complex 4E (SLC-4E)",
+      weather: {
+        tempC: 11,
+        conditions: "Clear and sunny skies",
+        windSpeedKmh: 8,
+        windDirection: "NNW",
+        visibilityKm: 16,
+        favorablePercentage: 100,
+      },
+      rocketName: "SpaceX Falcon 9 Block 5 (Booster B1063.1)",
+      rocketStages:
+        "2 Stages (9x Merlin 1D first stage + 1x Merlin Vacuum upper stage)",
+      orbitProfile: {
+        orbitName: "Sun-Synchronous Polar Low Earth Orbit (SSO)",
+        perigeeKm: 1336,
+        apogeeKm: 1336,
+        inclinationDeg: 66.0,
+        orbitalPeriodMin: 112.4,
+        trajectoryDescription:
+          "Ascended South along the California coastline, executed MECO at T+2:17, Stage 2 burn to orbital insertion, spacecraft deployment at T+58 min.",
+      },
+      historicalOutcome:
+        "100% mission success. Delivered sea-level accuracy within 1 millimeter, extending a 30-year climate record for global oceanography.",
+      realBudgetM: 160.0,
+    },
+    trajectoryType: "LEO_POLAR",
   },
   asteroid_scout: {
     name: "Psyche Deep Space Asteroid Scout",
@@ -552,13 +601,61 @@ export const MISSIONS: Record<string, MissionDef> = {
     min_payloads: 2,
     gravityMultiplier: 1.0,
     require_closed_comms: true,
-    counterpart: "NASA Psyche & OSIRIS-REx Asteroid Sample Return Missions",
+    counterpart: "NASA Psyche & OSIRIS-REx Deep Space Exploration",
     scientificGoal:
       "Measure remnant magnetic fields and mineral composition of primordial metallic and carbonaceous asteroids.",
-    desc: "Stage 1: Heavy-lift Falcon Heavy/Ariane 5 rocket with side boosters and upper stage. Stage 2: Deep space probe with xenon ion engine and magnetometer.",
-    stage1_desc: "Construct booster stage: Merlin cluster + dual solid boosters, fuel tanks, and payload adapter.",
-    stage2_desc: "Equip satellite: NEXT Xenon Ion Thruster, Fluxgate Magnetometer, and IR Spectrometer.",
+    desc: "Stage 1: Heavy-lift Falcon Heavy rocket with side boosters and upper stage. Stage 2: Deep space probe with xenon ion engine and magnetometer.",
+    stage1_desc:
+      "Construct booster stage: Merlin cluster + dual solid boosters, fuel tanks, and payload adapter.",
+    stage2_desc:
+      "Equip satellite: NEXT Xenon Ion Thruster, Fluxgate Magnetometer, and IR Spectrometer.",
     recommended_rocket: "Falcon Heavy / Ariane 5 (Heavy-Lift Launcher)",
+    storyline: {
+      chapterTitle: "Chapter 2: Journey to a Metal World",
+      narrativeIntro:
+        "Deep in the asteroid belt between Mars and Jupiter orbits 16 Psyche—an enigmatic potato-shaped world made almost entirely of metallic iron and nickel, believed to be the exposed core of an early planetary embryo shattered during the violent infancy of our solar system.",
+      whyImportant:
+        "Humans have visited rocky, icy, and gas worlds, but never a world of solid metal. Psyche offers an unprecedented direct look into the molten metallic cores that generate planetary magnetic shields.",
+      engineeringDeliverables: [
+        "Construct a heavy-lift rocket with supplemental booster thrust to achieve Earth escape velocity ($290M ceiling).",
+        "Deliver minimum 1,200 kN liftoff thrust with balanced mass distribution.",
+        "Prepare payload bus for deep space heliocentric cruise and Mars gravity assist slingshot.",
+      ],
+      threatsAndRisks:
+        "Deep space radiation belt degradation, 2.7 AU solar irradiance attenuation (requiring high-efficiency solar wings), and high-velocity micrometeroid bombardment.",
+    },
+    historicalFlight: {
+      missionName: "NASA Psyche Mission",
+      agency: "NASA Jet Propulsion Laboratory (JPL)",
+      launchDate: "October 13, 2023",
+      launchTimeUTC: "14:19:43 UTC (10:19 EDT)",
+      launchSite: "Kennedy Space Center, Florida",
+      pad: "Launch Complex 39A (LC-39A)",
+      weather: {
+        tempC: 23,
+        conditions: "Scattered cumulus clouds",
+        windSpeedKmh: 14,
+        windDirection: "East",
+        visibilityKm: 16,
+        favorablePercentage: 85,
+      },
+      rocketName: "SpaceX Falcon Heavy (Core + Dual Side Boosters)",
+      rocketStages:
+        "3 Falcon Cores (27 Merlin 1D engines) + 1 Merlin Vacuum upper stage",
+      orbitProfile: {
+        orbitName: "Heliocentric Mars-Slingshot Transfer (2.7 AU)",
+        perigeeKm: 149600000,
+        apogeeKm: 494000000,
+        inclinationDeg: 3.1,
+        orbitalPeriodMin: 2628000,
+        trajectoryDescription:
+          "Direct interplanetary injection, twin side boosters performed simultaneous LZ-1/LZ-2 landings, followed by a Mars gravity assist in May 2026.",
+      },
+      historicalOutcome:
+        "100% launch success. Trajectory committed toward asteroid 16 Psyche with arrival planned for August 2029.",
+      realBudgetM: 290.0,
+    },
+    trajectoryType: "DEEP_SPACE_ASTEROID",
   },
   space_telescope: {
     name: "James Webb-Class Space Observatory",
@@ -570,13 +667,61 @@ export const MISSIONS: Record<string, MissionDef> = {
     gravityMultiplier: 1.0,
     require_closed_comms: true,
     counterpart:
-      "NASA James Webb Space Telescope (JWST) & Nancy Grace Roman Telescope",
+      "NASA / ESA / CSA James Webb Space Telescope (JWST)",
     scientificGoal:
       "Observe the earliest galaxies forming after the Big Bang and characterize exoplanet atmospheres.",
-    desc: "Stage 1: Super heavy SLS hydrolox core stage with twin solid boosters and wide fairing. Stage 2: Folded space observatory with cryogenic sensors and high-gain DSN dish.",
-    stage1_desc: "Assemble SLS core: RS-25 hydrolox engines, cryogenic core tanks, solid boosters, and wide fairing envelope.",
-    stage2_desc: "Assemble observatory: IR Spectrometer, Multispectral Imager, high-gain dish, and dual batteries.",
-    recommended_rocket: "Space Launch System (SLS Block 1)",
+    desc: "Stage 1: Super heavy SLS/Ariane 5 hydrolox core stage with twin solid boosters and wide fairing. Stage 2: Folded space observatory with cryogenic sensors and high-gain DSN dish.",
+    stage1_desc:
+      "Assemble SLS core: RS-25 hydrolox engines, cryogenic core tanks, solid boosters, and wide fairing envelope.",
+    stage2_desc:
+      "Assemble observatory: IR Spectrometer, Multispectral Imager, high-gain dish, and dual batteries.",
+    recommended_rocket: "Ariane 5 ECA / Space Launch System",
+    storyline: {
+      chapterTitle: "Chapter 3: Looking Back to the Dawn of Time",
+      narrativeIntro:
+        "Humanity's greatest cosmic question remains unanswered: How did the first stars and galaxies ignite out of the primordial darkness after the Big Bang? The James Webb Space Telescope was engineered to detect faint infrared photons that have traveled across 13.5 billion light-years of expanding spacetime.",
+      whyImportant:
+        "JWST observes the cosmic dawn, pierces stellar dust clouds where new planets are born, and samples atmospheric molecular spectra of distant exoplanets to hunt for alien biosignatures (water vapor, methane, ozone).",
+      engineeringDeliverables: [
+        "Design a super-heavy rocket capable of launching a folded observatory into Sun-Earth L2 Transfer ($520M budget).",
+        "Achieve >= 1,800 kN thrust with cryogenic propellant tanks and covered vacuum upper engine.",
+        "Ensure payload fairing is wide and streamlined to protect delicate beryllium mirror segments.",
+      ],
+      threatsAndRisks:
+        "Sun-Earth L2 is 1.5 million kilometers away—far beyond astronaut servicing range. Zero margin for deployment error.",
+    },
+    historicalFlight: {
+      missionName: "James Webb Space Telescope (JWST)",
+      agency: "NASA / ESA / CSA",
+      launchDate: "December 25, 2021",
+      launchTimeUTC: "12:20:07 UTC (09:20 GFT)",
+      launchSite: "Guiana Space Centre, Kourou, French Guiana",
+      pad: "Ensemble de Lancement Ariane 3 (ELA-3)",
+      weather: {
+        tempC: 26,
+        conditions: "Tropical maritime breeze, light cirrus",
+        windSpeedKmh: 10,
+        windDirection: "ENE",
+        visibilityKm: 14,
+        favorablePercentage: 95,
+      },
+      rocketName: "Arianespace Ariane 5 ECA (Flight VA256)",
+      rocketStages:
+        "Vulcain 2 hydrolox cryogenic core + twin EAP solid boosters + HM7B upper stage",
+      orbitProfile: {
+        orbitName: "Sun-Earth L2 Lagrange Halo Orbit (1,500,000 km)",
+        perigeeKm: 1500000,
+        apogeeKm: 1500000,
+        inclinationDeg: 5.3,
+        orbitalPeriodMin: 259200,
+        trajectoryDescription:
+          "Flawless injection with burn accuracy so precise that conserved propellant doubled the expected observatory operational lifespan from 10 to 20+ years.",
+      },
+      historicalOutcome:
+        "Flawless launch and 100% deployment of 344 single-point-failure items. Currently delivering revolutionary views of the earliest cosmos.",
+      realBudgetM: 520.0,
+    },
+    trajectoryType: "SUN_EARTH_L2",
   },
   artemis_lunar: {
     name: "Artemis III: Lunar Transfer Vehicle",
@@ -591,12 +736,60 @@ export const MISSIONS: Record<string, MissionDef> = {
     scientificGoal:
       "Map permanently shadowed polar craters to locate water ice reserves for future crewed Artemis base camps.",
     desc: "Stage 1: Mega-class lunar launcher (SLS / Saturn V class) delivering high TLI escape velocity. Stage 2: Orion lunar spacecraft with radar SAR and docking port.",
-    stage1_desc: "Build lunar stack: RS-25 core engine, cryogenic propellant tanks, side boosters, vacuum upper stage, and docking adapter.",
-    stage2_desc: "Fit Orion craft: Synthetic Aperture Radar (SAR), NDS docking port, and high-capacity solar wings.",
+    stage1_desc:
+      "Build lunar stack: RS-25 core engine, cryogenic propellant tanks, side boosters, vacuum upper stage, and docking adapter.",
+    stage2_desc:
+      "Fit Orion craft: Synthetic Aperture Radar (SAR), NDS docking port, and high-capacity solar wings.",
     recommended_rocket: "Saturn V / SLS Mega Moon Rocket",
+    storyline: {
+      chapterTitle: "Chapter 4: The Next Giant Leap to the Moon",
+      narrativeIntro:
+        "Half a century after Apollo, humanity returns to the Moon—this time to stay. The Artemis program builds the permanent infrastructure for sustained lunar exploration, targeting the dark, enigmatic South Pole where crater floors haven't seen sunlight in billions of years.",
+      whyImportant:
+        "These permanently shadowed lunar craters harbor immense reservoirs of water ice. Water means drinking water, breathable oxygen, and hydrogen rocket fuel—transforming the Moon into humanity's staging base for Mars.",
+      engineeringDeliverables: [
+        "Assemble a mega-class Moon rocket (SLS / Saturn V class) delivering >= 2,400 kN launch thrust within $880M.",
+        "Stack multiple cryogenic core stages and high-impulse solid rocket booster segments.",
+        "Execute Earth orbit insertion, Trans-Lunar Injection (TLI), and lunar orbital rendezvous.",
+      ],
+      threatsAndRisks:
+        "Deep cislunar space vacuum, extreme thermal shifts from +120°C in sunlight to -230°C in polar shadow, and hypersonic atmospheric re-entry at 40,000 km/h.",
+    },
+    historicalFlight: {
+      missionName: "Artemis I / Orion Exploration Mission",
+      agency: "NASA Exploration Systems Directorate",
+      launchDate: "November 16, 2022",
+      launchTimeUTC: "06:47:44 UTC (01:47 EST)",
+      launchSite: "Kennedy Space Center, Florida",
+      pad: "Launch Complex 39B (LC-39B)",
+      weather: {
+        tempC: 22,
+        conditions: "Clear night sky, offshore offshore breeze",
+        windSpeedKmh: 16,
+        windDirection: "SE",
+        visibilityKm: 16,
+        favorablePercentage: 90,
+      },
+      rocketName: "NASA Space Launch System (SLS Block 1)",
+      rocketStages:
+        "4x RS-25 hydrolox core engines + twin 5-segment solid rocket boosters + Interim Cryogenic Propulsion Stage (ICPS)",
+      orbitProfile: {
+        orbitName: "Distant Retrograde Orbit (DRO) & Lunar Flyby (130 km)",
+        perigeeKm: 130,
+        apogeeKm: 432210,
+        inclinationDeg: 28.5,
+        orbitalPeriodMin: 36000,
+        trajectoryDescription:
+          "Night liftoff, booster separation at T+2:12, core cutoff at T+8:03, TLI burn at T+1:29:00, flyby 130 km above lunar surface, and safe ocean splashdown.",
+      },
+      historicalOutcome:
+        "Historic achievement. Traveled 2.25 million kilometers, broke the distance record for human-rated spacecraft, and paved the way for crewed Artemis landings.",
+      realBudgetM: 880.0,
+    },
+    trajectoryType: "TRANS_LUNAR",
   },
   sandbox_mode: {
-    name: "⚙️ Custom Engineering Sandbox",
+    name: "Custom Engineering Sandbox",
     target: "Custom User Orbit",
     budget_m: 1000.0,
     min_thrust_kn: 500,
@@ -611,6 +804,47 @@ export const MISSIONS: Record<string, MissionDef> = {
     stage1_desc: "Build any rocket or aerospace launch vehicle architecture.",
     stage2_desc: "Design and test custom satellite payload instrumentation.",
     recommended_rocket: "Experimental Modular Launcher",
+    storyline: {
+      chapterTitle: "Sandbox: Unrestricted Aerospace Prototyping",
+      narrativeIntro:
+        "Welcome to the JPL Mission Design Lab skunkworks. Here, flight certification limits are removed, granting full authority to prototype novel aerospace launchers and deep-space vehicle configurations.",
+      whyImportant:
+        "Breakthrough innovations in spaceflight emerge when engineers have the freedom to stress-test unorthodox architectures before committing to high-stakes launch manifests.",
+      engineeringDeliverables: [
+        "Experiment with diverse staging ratios, engine thrust pairings, and payload masses.",
+        "Validate aerodynamic integrity across custom flight envelopes.",
+      ],
+      threatsAndRisks: "Unconstrained experimental designs may encounter extreme structural loads.",
+    },
+    historicalFlight: {
+      missionName: "NASA Advanced Concepts Lab",
+      agency: "NASA JPL & Goddard MDL",
+      launchDate: "Ongoing 2026",
+      launchTimeUTC: "Continuous",
+      launchSite: "NASA JPL Spacecraft Assembly Facility",
+      pad: "High Bay 1 VAB",
+      weather: {
+        tempC: 21,
+        conditions: "Cleanroom Class 10,000 Environment",
+        windSpeedKmh: 0,
+        windDirection: "Controlled",
+        visibilityKm: 100,
+        favorablePercentage: 100,
+      },
+      rocketName: "Modular Rapid Prototype Vehicle",
+      rocketStages: "User-Configured Multi-Stage",
+      orbitProfile: {
+        orbitName: "Custom Arbitrary Trajectory",
+        perigeeKm: 400,
+        apogeeKm: 36000,
+        inclinationDeg: 28.5,
+        orbitalPeriodMin: 90,
+        trajectoryDescription: "Dynamic real-time user trajectory simulation.",
+      },
+      historicalOutcome: "Active simulation framework for experimental aerospace mission design.",
+      realBudgetM: 1000.0,
+    },
+    trajectoryType: "LEO_POLAR",
   },
 };
 

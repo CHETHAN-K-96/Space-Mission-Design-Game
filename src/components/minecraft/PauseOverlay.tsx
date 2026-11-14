@@ -3,7 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { TimeOfDay } from "../../engine/minecraft/types";
-import { Play, Sparkles, Box, Sun, Moon } from "lucide-react";
+import { Play, Sparkles, Box, Sun, Moon, BookOpen } from "lucide-react";
 
 interface PauseOverlayProps {
   isVisible: boolean;
@@ -11,6 +11,7 @@ interface PauseOverlayProps {
   onEnterGame: () => void;
   onLoadCertifiedCraft: () => void;
   onCycleTime: () => void;
+  onOpenStory?: () => void;
 }
 
 export function PauseOverlay({
@@ -19,6 +20,7 @@ export function PauseOverlay({
   onEnterGame,
   onLoadCertifiedCraft,
   onCycleTime,
+  onOpenStory,
 }: PauseOverlayProps) {
   if (!isVisible) return null;
 
@@ -46,6 +48,14 @@ export function PauseOverlay({
           >
             <Play className="w-4 h-4" /> ENTER LAUNCH COMPLEX (LOCK MOUSE)
           </button>
+          {onOpenStory && (
+            <button
+              onClick={onOpenStory}
+              className="bg-indigo-950/70 hover:bg-indigo-900/80 text-indigo-200 border border-indigo-700/60 py-2 px-3 rounded-md text-xs font-semibold transition-all hover:border-indigo-400 flex items-center justify-center gap-1.5"
+            >
+              <BookOpen className="w-3.5 h-3.5 text-indigo-400" /> MISSION STORYLINE & HISTORICAL FLIGHT
+            </button>
+          )}
           <button
             onClick={onLoadCertifiedCraft}
             className="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 py-2 px-3 rounded-md text-xs font-semibold transition-all hover:border-sky-400 flex items-center justify-center gap-1.5"

@@ -51,6 +51,7 @@ interface CockpitHudProps {
   onOpenResources: () => void;
   onToggleFlight: () => void;
   onClearCraft: () => void;
+  onOpenStory?: () => void;
 }
 
 export function CockpitHud({
@@ -77,6 +78,7 @@ export function CockpitHud({
   onOpenResources,
   onToggleFlight,
   onClearCraft,
+  onOpenStory,
 }: CockpitHudProps) {
   const [showUtilities, setShowUtilities] = useState(false);
 
@@ -135,6 +137,17 @@ export function CockpitHud({
             </select>
             <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
           </div>
+
+          {onOpenStory && (
+            <button
+              onClick={onOpenStory}
+              className="bg-slate-900 hover:bg-slate-800 text-sky-300 border border-slate-700 hover:border-sky-500 px-2.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all shadow-sm"
+              title="Open Mission Storyline, Objectives & Historical Flight Details"
+            >
+              <BookOpen className="w-3.5 h-3.5 text-sky-400" />
+              <span className="hidden md:inline">Mission Story</span>
+            </button>
+          )}
         </div>
 
         {/* Center Section: Stage Switcher (Rocket vs Satellite) */}

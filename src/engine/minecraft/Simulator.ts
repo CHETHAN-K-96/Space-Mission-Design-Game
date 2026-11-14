@@ -12,7 +12,7 @@ import { initMaterials, MATERIALS } from "./TextureGen";
 import { soundEngine } from "./SoundEngine";
 import { VoxelWorld } from "./VoxelWorld";
 import { Player } from "./Player";
-import { DevStage, MissionDef, TelemetryData, TimeOfDay } from "./types";
+import { DevStage, MissionDef, MissionDebriefScore, TelemetryData, TimeOfDay } from "./types";
 
 export interface SimulatorCallbacks {
   onTelemetryChange?: (telem: TelemetryData) => void;
@@ -36,6 +36,7 @@ export interface SimulatorCallbacks {
     velKmh?: number,
     mach?: number
   ) => void;
+  onLaunchComplete?: (debrief: MissionDebriefScore, mission: MissionDef) => void;
   onLaunchFinish?: () => void;
   onHoverBlock?: (
     blockType: number | null,
@@ -271,8 +272,8 @@ export class SpacecraftSimulator {
     const twr =
       totalMass > 0
         ? parseFloat(
-            (totalThrust / Math.max(totalMass * 0.0098 * gMult, 0.01)).toFixed(1)
-          )
+          (totalThrust / Math.max(totalMass * 0.0098 * gMult, 0.01)).toFixed(1)
+        )
         : 0;
 
     const budgetCap = this.activeMission.budget_m ?? 160;
@@ -397,10 +398,9 @@ export class SpacecraftSimulator {
     this.world.rebuildMeshes();
     this.callbacks.onShroudChange?.(this.fairingCutaway);
     this.callbacks.onNotification?.(
-      `Fairing Shroud Mode: ${
-        this.fairingCutaway
-          ? "CUTAWAY (Inner Satellite Instruments Visible)"
-          : "SOLID AERODYNAMIC ROCKET SHROUD"
+      `Fairing Shroud Mode: ${this.fairingCutaway
+        ? "CUTAWAY (Inner Satellite Instruments Visible)"
+        : "SOLID AERODYNAMIC ROCKET SHROUD"
       }`
     );
     return this.fairingCutaway;
@@ -411,10 +411,9 @@ export class SpacecraftSimulator {
     this.updateBlueprintGuide();
     this.callbacks.onBlueprintModeChange?.(mode);
     this.callbacks.onNotification?.(
-      `Blueprint Mode: ${
-        mode === "SATELLITE"
-          ? "INNER SATELLITE CORE"
-          : "COMPLETE LAUNCH VEHICLE"
+      `Blueprint Mode: ${mode === "SATELLITE"
+        ? "INNER SATELLITE CORE"
+        : "COMPLETE LAUNCH VEHICLE"
       }`
     );
   }
@@ -594,8 +593,7 @@ export class SpacecraftSimulator {
     this.blueprintGroup.visible = this.blueprintVisible;
     this.callbacks.onBlueprintChange?.(this.blueprintVisible);
     this.callbacks.onNotification?.(
-      `Holographic Blueprint Guide: ${
-        this.blueprintVisible ? "ENABLED" : "DISABLED"
+      `Holographic Blueprint Guide: ${this.blueprintVisible ? "ENABLED" : "DISABLED"
       }`
     );
   }
@@ -656,11 +654,17 @@ export class SpacecraftSimulator {
   }
 
   public isCountdown: boolean = false;
+  public isStageSeparated: boolean = false;
+  public stageSeparationSec: number = 0;
+  public separationAscentY: number = 0;
 
   public startLaunchSequence() {
     if (this.isLaunching || this.isCountdown) return;
 
     this.isCountdown = true;
+    this.isStageSeparated = false;
+    this.stageSeparationSec = 0;
+    this.separationAscentY = 0;
     this.launchStageName = "COUNTDOWN";
 
     // Set clear hero pre-ignition camera position looking North along South crawlerway
@@ -723,13 +727,19 @@ export class SpacecraftSimulator {
         );
       }, 3500);
 
-      // Stage 2: Stage Separation (MECO)
+      // Stage 2: Stage Separation (MECO & Physical Booster Drop)
       setTimeout(() => {
         if (this.isDestroyed) return;
         this.launchStageName = "STAGE_SEPARATION";
+        this.isStageSeparated = true;
+        this.stageSeparationSec = this.launchTimeSec;
+        this.separationAscentY = this.launchAscentY;
         this.callbacks.onNotification?.(
-          "T+02:20: MECO CONFIRMED! FIRST STAGE SEPARATED! VACUUM UPPER ENGINE IGNITED!"
+          "T+02:20: MECO CONFIRMED! FIRST STAGE SEPARATED & FALLING! VACUUM UPPER ENGINE IGNITED!"
         );
+        for (let i = 0; i < 15; i++) {
+          this.spawnExhaustPlume();
+        }
       }, 6500);
 
       // Stage 3: Fairing Jettison (Atmospheric Exit)
@@ -751,17 +761,17 @@ export class SpacecraftSimulator {
         this.world.rebuildMeshes();
       }, 9500);
 
-      // Stage 4: Orbital Insertion
+      // Stage 4: Orbital Insertion & Trajectory Maneuver
       setTimeout(() => {
         if (this.isDestroyed) return;
         this.launchStageName = "ORBITAL_INSERTION";
         this.callbacks.onNotification?.(
-          "T+04:30: ORBITAL INSERTION ACHIEVED! SATELLITE PAYLOAD ONLINE IN TARGET ORBIT!"
+          `T+04:30: ORBITAL INSERTION ACHIEVED! SATELLITE COMMITTED TO ${this.activeMission.target}!`
         );
         confetti({ particleCount: 220, spread: 130, origin: { y: 0.5 } });
       }, 12000);
 
-      // Finish
+      // Finish & Systems Engineering Debrief Score
       setTimeout(() => {
         if (this.isDestroyed) return;
         this.isLaunching = false;
@@ -769,6 +779,48 @@ export class SpacecraftSimulator {
         this.callbacks.onNotification?.(
           "MISSION SUCCESS: 100% FLIGHT READINESS OBJECTIVES ACHIEVED!"
         );
+
+        // Generate Systems Engineering Debrief Score
+        const telem = this.computeTelemetry();
+        const maxBudget = this.activeMission.budget_m || 160;
+        const budgetPct = Math.max(0, Math.min(1, telem.budgetRemaining / maxBudget));
+        const budgetScore = Math.round(budgetPct * 20);
+
+        const massScore = Math.max(12, Math.min(20, Math.round(20 - Math.max(0, (telem.totalMass - 3000) / 400))));
+        const twrScore = telem.twr >= 1.2 && telem.twr <= 2.5 ? 20 : telem.twr >= 1.0 ? 16 : 5;
+        const powerScore = telem.netPower >= 50 ? 20 : telem.netPower >= 0 ? 17 : 8;
+        const scienceScore = telem.hasPayloadContainer ? 20 : 15;
+
+        const totalScore = Math.min(100, budgetScore + massScore + twrScore + powerScore + scienceScore);
+        const grade: "A+" | "A" | "B" | "C" | "FAIL" =
+          totalScore >= 92 ? "A+" : totalScore >= 82 ? "A" : totalScore >= 72 ? "B" : totalScore >= 60 ? "C" : "FAIL";
+
+        const debrief: MissionDebriefScore = {
+          totalScore,
+          grade,
+          verdict:
+            totalScore >= 80
+              ? "MISSION SUCCESS: FLIGHT OPERATIONS CERTIFIED (LEVEL 3 POINT DESIGN)"
+              : "SUB-OPTIMAL DESIGN: BUDGET OR PROPULSION MARGINS NARROW",
+          breakdown: {
+            budgetEfficiency: budgetScore,
+            structuralMass: massScore,
+            propulsionTWR: twrScore,
+            powerBalance: powerScore,
+            scienceAlignment: scienceScore,
+          },
+          telemetrySnapshot: {
+            finalAltKm: Math.round(this.launchAscentY * 0.42),
+            maxVelKmh: Math.round(Math.min(7800, this.launchAscentY * 9.5 + this.launchTimeSec * 110) * 3.6),
+            maxG: (1.0 + Math.min(3.5, this.launchTimeSec * 0.3)).toFixed(1) + " G",
+            flightDurationSec: 15,
+            costSpentM: telem.totalCostM,
+            massKg: telem.totalMass,
+            twr: telem.twr,
+          },
+        };
+
+        this.callbacks.onLaunchComplete?.(debrief, this.activeMission);
       }, 15000);
     }, 3000);
   }
@@ -992,7 +1044,27 @@ export class SpacecraftSimulator {
         const key = `${b.x},${b.y},${b.z}`;
         const mesh = this.world.blockMeshMap.get(key);
         if (mesh) {
-          mesh.position.y = b.y + 0.5 + this.launchAscentY;
+          const isLowerBooster =
+            b.y <= PAD_Y + 3 ||
+            b.type === BLOCKS.MERLIN_CLUSTER ||
+            b.type === BLOCKS.RS25_ENGINE ||
+            b.type === BLOCKS.SOLID_BOOSTER ||
+            (b.type === BLOCKS.LIQUID_FUEL_TANK && b.y <= PAD_Y + 2) ||
+            (b.type === BLOCKS.CRYOGENIC_TANK && b.y <= PAD_Y + 2);
+
+          if (this.isStageSeparated && isLowerBooster) {
+            // First stage booster drops away with physics fall and lateral drift!
+            const dtFall = Math.max(0, this.launchTimeSec - this.stageSeparationSec);
+            const dropY = this.separationAscentY - dtFall * dtFall * 3.5 - dtFall * 8;
+            mesh.position.y = b.y + 0.5 + dropY;
+
+            // Lateral drift away from central ascending core
+            const driftDir = b.x > PAD_X ? 1 : b.x < PAD_X ? -1 : (b.z > PAD_Z ? 0.7 : -0.7);
+            mesh.position.x = b.x + 0.5 + driftDir * dtFall * 1.8;
+            mesh.rotation.z += 0.005 * driftDir;
+          } else {
+            mesh.position.y = b.y + 0.5 + this.launchAscentY;
+          }
         }
       });
 
