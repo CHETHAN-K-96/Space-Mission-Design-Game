@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import Link from "next/link";
+import * as THREE from "three";
 import {
   createShowcaseComponents,
   ShowcaseComponent,
@@ -38,6 +39,239 @@ export function ShowcaseView() {
     if (activeCategory === "ALL") return components;
     return components.filter((comp) => comp.category === activeCategory);
   }, [components, activeCategory]);
+
+  // Card canvas elements registry
+  const canvasRefs = useRef<Record<string, HTMLCanvasElement | null>>({});
+
+  // Individual card rotation states (drag & idle spin)
+  const cardRotations = useRef<
+    Record<
+      string,
+      {
+        rotX: number;
+        rotY: number;
+        isDragging: boolean;
+        lastPos: { x: number; y: number };
+      }
+    >
+  >({});
+
+  const draggingCardRef = useRef<string | null>(null);
+
+  const registerCanvas = useCallback(
+    (id: string, el: HTMLCanvasElement | null) => {
+      canvasRefs.current[id] = el;
+      if (el && !cardRotations.current[id]) {
+        cardRotations.current[id] = {
+          rotX: 0,
+          rotY: Math.random() * Math.PI * 2,
+          isDragging: false,
+          lastPos: { x: 0, y: 0 },
+        };
+      }
+    },
+    []
+  );
+
+  const handleCardMouseDown = useCallback((id: string, e: React.MouseEvent) => {
+    draggingCardRef.current = id;
+    if (cardRotations.current[id]) {
+      cardRotations.current[id].isDragging = true;
+      cardRotations.current[id].lastPos = { x: e.clientX, y: e.clientY };
+    }
+  }, []);
+
+  const handleCardTouchStart = useCallback((id: string, e: React.TouchEvent) => {
+    if (e.touches.length > 0) {
+      draggingCardRef.current = id;
+      if (cardRotations.current[id]) {
+        cardRotations.current[id].isDragging = true;
+        cardRotations.current[id].lastPos = {
+          x: e.touches[0].clientX,
+          y: e.touches[0].clientY,
+        };
+      }
+    }
+  }, []);
+
+  // Global window listeners for mouse/touch move and up
+  useEffect(() => {
+    const onMouseMove = (e: MouseEvent) => {
+      const activeId = draggingCardRef.current;
+      if (!activeId || !cardRotations.current[activeId]) return;
+      const state = cardRotations.current[activeId];
+      if (!state.isDragging) return;
+
+      const deltaX = e.clientX - state.lastPos.x;
+      const deltaY = e.clientY - state.lastPos.y;
+      state.rotY += deltaX * 0.015;
+      state.rotX += deltaY * 0.015;
+      state.lastPos = { x: e.clientX, y: e.clientY };
+    };
+
+    const onMouseUp = () => {
+      const activeId = draggingCardRef.current;
+      if (activeId && cardRotations.current[activeId]) {
+        cardRotations.current[activeId].isDragging = false;
+      }
+      draggingCardRef.current = null;
+    };
+
+    const onTouchMove = (e: TouchEvent) => {
+      const activeId = draggingCardRef.current;
+      if (!activeId || !cardRotations.current[activeId] || e.touches.length === 0)
+        return;
+      const state = cardRotations.current[activeId];
+      if (!state.isDragging) return;
+
+      const deltaX = e.touches[0].clientX - state.lastPos.x;
+      const deltaY = e.touches[0].clientY - state.lastPos.y;
+      state.rotY += deltaX * 0.015;
+      state.rotX += deltaY * 0.015;
+      state.lastPos = {
+        x: e.touches[0].clientX,
+        y: e.touches[0].clientY,
+      };
+    };
+
+    const onTouchEnd = () => {
+      const activeId = draggingCardRef.current;
+      if (activeId && cardRotations.current[activeId]) {
+        cardRotations.current[activeId].isDragging = false;
+      }
+      draggingCardRef.current = null;
+    };
+
+    window.addEventListener("mousemove", onMouseMove);
+    window.addEventListener("mouseup", onMouseUp);
+    window.addEventListener("touchmove", onTouchMove, { passive: true });
+    window.addEventListener("touchend", onTouchEnd);
+
+    return () => {
+      window.removeEventListener("mousemove", onMouseMove);
+      window.removeEventListener("mouseup", onMouseUp);
+      window.removeEventListener("touchmove", onTouchMove);
+      window.removeEventListener("touchend", onTouchEnd);
+    };
+  }, []);
+
+  // Shared High-Performance Offscreen WebGL Rendering Engine
+  useEffect(() => {
+    const renderWidth = 360;
+    const renderHeight = 250;
+
+    let renderer: THREE.WebGLRenderer;
+    try {
+      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+      renderer.setSize(renderWidth, renderHeight);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      renderer.setClearColor(0x000000, 0); // Transparent background
+    } catch (err) {
+      console.error("Failed to initialize WebGLRenderer:", err);
+      return;
+    }
+
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(
+      40,
+      renderWidth / renderHeight,
+      0.1,
+      100
+    );
+    camera.position.set(1.6, 1.25, 1.8);
+    camera.lookAt(0, 0, 0);
+
+    // High quality PBR lighting setup
+    const ambLight = new THREE.AmbientLight(0xffffff, 0.95);
+    scene.add(ambLight);
+
+    const dirLight = new THREE.DirectionalLight(0xffffff, 1.1);
+    dirLight.position.set(3, 4, 3);
+    scene.add(dirLight);
+
+    const rimLight = new THREE.DirectionalLight(0x38bdf8, 0.65);
+    rimLight.position.set(-3, -2, -2);
+    scene.add(rimLight);
+
+    // 1 Block Blueprint Grid Platform
+    const gridHelper = new THREE.GridHelper(1.4, 4, 0x0284c7, 0x1e293b);
+    gridHelper.position.y = -0.5;
+    scene.add(gridHelper);
+
+    // Build and cache 3D models with centered bounding boxes
+    const models: Record<string, THREE.Group> = {};
+    components.forEach((comp) => {
+      try {
+        const mesh = comp.buildModel();
+        const box = new THREE.Box3().setFromObject(mesh);
+        const center = new THREE.Vector3();
+        box.getCenter(center);
+        mesh.position.sub(center);
+
+        // Normalize scale for tall / wide components
+        const size = new THREE.Vector3();
+        box.getSize(size);
+        const maxDim = Math.max(size.x, size.y, size.z);
+        if (maxDim > 1.25) {
+          const s = 1.25 / maxDim;
+          mesh.scale.set(s, s, s);
+        }
+
+        const pivot = new THREE.Group();
+        pivot.add(mesh);
+        models[comp.id] = pivot;
+      } catch (err) {
+        console.warn("Failed to create model for component:", comp.id, err);
+      }
+    });
+
+    let animationId: number;
+
+    const renderLoop = () => {
+      animationId = requestAnimationFrame(renderLoop);
+
+      filteredComponents.forEach((comp) => {
+        const canvas = canvasRefs.current[comp.id];
+        const model = models[comp.id];
+        if (!canvas || !model) return;
+
+        // Skip render if canvas is not in document
+        if (!canvas.isConnected) return;
+
+        const rotState = cardRotations.current[comp.id];
+        if (rotState) {
+          if (!rotState.isDragging) {
+            rotState.rotY += 0.01; // Smooth idle rotation
+          }
+          model.rotation.y = rotState.rotY;
+          model.rotation.x = rotState.rotX;
+        }
+
+        scene.add(model);
+        renderer.render(scene, camera);
+        scene.remove(model);
+
+        const ctx = canvas.getContext("2d");
+        if (ctx) {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          ctx.drawImage(
+            renderer.domElement,
+            0,
+            0,
+            canvas.width,
+            canvas.height
+          );
+        }
+      });
+    };
+
+    renderLoop();
+
+    return () => {
+      cancelAnimationFrame(animationId);
+      renderer.dispose();
+    };
+  }, [components, filteredComponents]);
 
   return (
     <div className="min-h-screen bg-[#090d16] text-slate-100 flex flex-col font-sans">
@@ -97,7 +331,13 @@ export function ShowcaseView() {
       <main className="p-6 max-w-[1600px] mx-auto w-full flex-1">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {filteredComponents.map((comp) => (
-            <ShowcaseCard key={comp.id} component={comp} />
+            <ShowcaseCard
+              key={comp.id}
+              component={comp}
+              registerCanvas={registerCanvas}
+              onCardMouseDown={handleCardMouseDown}
+              onCardTouchStart={handleCardTouchStart}
+            />
           ))}
         </div>
       </main>

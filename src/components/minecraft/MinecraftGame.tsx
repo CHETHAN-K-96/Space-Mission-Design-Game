@@ -217,7 +217,7 @@ export function MinecraftGame() {
             } else {
               try {
                 canvasRef.current?.requestPointerLock?.();
-              } catch {}
+              } catch { }
             }
             return next;
           });
@@ -234,7 +234,7 @@ export function MinecraftGame() {
           } else {
             try {
               canvasRef.current?.requestPointerLock?.();
-            } catch {}
+            } catch { }
           }
           return next;
         });
