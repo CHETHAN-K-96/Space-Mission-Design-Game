@@ -1,149 +1,89 @@
 # NASA Space Mission Design Game (SMDG)
-### Systems Engineering & CubeSat 101 Crafting Simulator
+### Systems Engineering & CubeSat 101 Spacecraft VAB Simulator
 **2026 NASA Space Apps Challenge**
 
 [![NASA Space Apps](https://img.shields.io/badge/NASA-Space_Apps_Challenge_2026-blue.svg)](https://www.spaceappschallenge.org)
-[![Tech Stack](https://img.shields.io/badge/Tech_Stack-Next.js_14_•_React_18_•_Tailwind_CSS_•_Framer_Motion-cyan.svg)](#tech-stack)
-[![Engineering Standard](https://img.shields.io/badge/Standard-NASA_CubeSat_101_•_JPL_CML_1--3-emerald.svg)](#nasa-frameworks)
+[![Aesthetic](https://img.shields.io/badge/Aesthetic-Authentic_Minecraft_Voxel_%2B_NASA_Telemetry-emerald.svg)](#features)
+[![Standard](https://img.shields.io/badge/Standard-NASA_CubeSat_101_%E2%80%A2_JPL_CML_1--3-cyan.svg)](#nasa-frameworks)
+[![Dataset](https://img.shields.io/badge/Dataset-NASA_JPL_Horizons_%2B_LRO-blue.svg)](#nasa-dataset-integration)
 
 ---
 
-## 🚀 Overview
+## Overview
 
-Designing a space mission requires concurrent systems engineering—making calculated trade-offs across competing disciplines: **Power (EPS)**, **Propulsion (Delta-V)**, **Mass Budget**, **Communications (Data Rates)**, and **Cost (XP)**.
+Designing a space mission requires concurrent systems engineering: making calculated trade-offs across competing disciplines: **Power (EPS)**, **Propulsion (Delta-V)**, **Mass Budget**, **Communications (Downlink Bandwidth)**, and **Real Budget ($M)**.
 
-Inspired by *Kerbal Space Program*, *Spaceflight Simulator*, and *Minecraft*, this web application provides an intuitive **2D 5x5 Voxel Vehicle Assembly Grid** where players design CubeSats and validate flight readiness against actual NASA mission constraints before launch.
-
----
-
-## 🛠 Tech Stack & Architecture
-
-- **Framework:** Next.js 14+ (App Router, TypeScript) & React 18
-- **Styling:** Tailwind CSS with high-tech CRT dark space aesthetic (`bg-slate-950`, neon cyan/amber/emerald telemetry accents, glassmorphism panels)
-- **State Management:** React Context API (`GameContext.tsx`) with pure-function derived telemetry calculations
-- **Animations:** Framer Motion (stage transitions, rocket trajectory progress)
-- **Icons & Visuals:** Lucide React & Canvas Confetti
-- **Audio Synthesizer:** Zero-dependency Web Audio API sound engine (sine/sawtooth oscillators for placement clicks, thruster rumble, alarms, and mission success fanfares)
+This project delivers two synchronized simulation environments built for students, engineers, and space enthusiasts:
+1. **3D Minecraft Spaceport VAB (`minecraft.html`)**: A full 3D voxel spaceport featuring Cape Canaveral launch pads, difficulty flow controls (Easy/Normal/Hard), 4-player real-time concurrent multiplayer with 3D astronaut avatars, dynamic time-of-day cycling, and an animated launch with marked trajectory arcs from Earth's surface into space and trans-lunar transfer.
+2. **2D Systems Engineering Workbench (`index.html`)**: A streamlined 5x5 assembly bay with drag-and-drop component placement, live telemetry, difficulty modes, official NASA dataset integration, and an animated 2D canvas trajectory from Earth to lunar orbit.
 
 ---
 
-## 🛰 Real NASA Engineering Frameworks Incorporated
+## Key Features
 
-### 1. Concept Maturity Levels (CML)
-Developed by NASA Jet Propulsion Laboratory (JPL) to quantify mission maturity prior to formal project formulation:
-- **CML 1 (Concept Feasibility):** Verifies first-order physical requirements (lift-off thrust, positive solar margin).
-- **CML 2 (Trade Studies):** Compares alternative subsystem configurations (e.g., camera resolution vs. high-gain antenna bandwidth).
-- **CML 3 (Point Design Validated):** Full systems engineering integration certified upon completing the simulated launch.
+### 1. Difficulty Flow Control (Easy, Normal, Hard)
+- **EASY (Cadet):** $+50\%$ budget cap allowance, $-20\%$ thrust requirement. Ideal for beginners learning spaceflight trade-offs.
+- **NORMAL (Engineer):** Real-world baseline engineering parameters and NASA CubeSat 101 standards ($10.0M budget, $\text{TWR} \ge 1.0$).
+- **HARD (Flight Director):** $-15\%$ budget cap, $+25\%$ thrust requirements with strict margins.
 
-### 2. NASA Mission Design Lab (MDL) Trades
-Simulates concurrent design sessions where changes to one subsystem immediately propagate to all others:
-- Adding a **Multispectral Camera** increases science score, but adds $+15\text{ kg}$ mass, draws $-30\text{ W}$, and produces $+50\text{ MBps}$ of untransmitted data.
-- Downlinking that data requires a **High-Gain Antenna**, which adds cost, mass, and further power draw.
-- Compensating with an **Ion Thruster** requires $+50\text{W}$ solar generation to prevent bus brownouts.
+### 2. Earth-to-Space Trajectory Visualization
+- **3D Atmospheric Ascent Arc (`minecraft.html`):** Marked trajectory track line launching from Launch Pad 39A up to 85 km staging altitude, then transitioning to the orbital plane.
+- **Trans-Lunar Injection & Lunar Orbit:** Hohmann transfer ellipse from 250 km LEO parking orbit, past the Moon, into a 100 km lunar polar orbit.
+- **2D Trajectory Simulation Canvas (`index.html`):** Real-time animated canvas tracking the spacecraft along a flight curve from Earth's atmosphere into space and to the Moon.
 
-### 3. CubeSat 101 Standard (NASA CSLI)
-- Standardized form-factor blocks represent 1U subsystem allocations.
-- **Eclipse Umbra Logic:** In low Earth orbit (LEO), spacecraft spend ~35 minutes per orbit in Earth's shadow. Solar cells produce 0W during eclipse; without **Battery Blocks**, the spacecraft suffers catastrophic thermal/electrical brownout.
+### 3. Subsystem Component Representation (Engines, Payloads, Avionics)
+- **Engines:** Solid Rocket Booster (high-thrust ascent), Hall-Effect Ion Thruster (high-efficiency xenon electric propulsion), Cold-Gas RCS Microthrusters (attitude maneuvering).
+- **Payloads:** Multispectral Surface Imager (optical geology/agriculture), Infrared Spectrometer (gas absorption lines), Fluxgate Magnetometer (planetary magnetic fields), Synthetic Aperture Radar (SAR).
+- **Power & Comms:** Triple-Junction GaAs Solar Arrays, LiFePO4 Eclipse Battery Packs (CubeSat 101 umbra standard), Deep Space Network (DSN) X-band dish, and omni patch antennas.
 
-### 4. Lift & Thrust-to-Weight (TWR) Physics Engine
-- Gravitational force calculation:
-  $$\text{Required Minimum Thrust (kN)} = \text{Total Spacecraft Mass (kg)} \times 0.0098\text{ kN/kg}$$
-- The pre-flight checklist enforces:
-  $$\text{TWR} = \frac{\text{Total Thrust (kN)}}{\text{Total Mass (kg)} \times 0.0098} \ge 1.0$$
+### 4. Real Budget ($M) Instead of Arbitrary XP
+- Replaced all artificial "XP" values with actual spaceflight economics ($M millions of dollars).
+- Artemis mission budget: **$10.0M** (scalable by difficulty mode).
+- Components priced by aerospace flight readiness standards ($0.5M to $3.2M).
 
----
+### 5. HTML5 Drag-and-Drop Assembly
+- Players can drag components directly from the palette and drop them into any slot of the 5x5 Vehicle Assembly Bay.
+- Traditional click-to-place remains fully supported for maximum accessibility.
 
-## 📦 Component Database (NASA CubeSat 101 Data)
+### 6. Official NASA Dataset Integration (Judgement Criterion)
+- Integrated the **NASA JPL Horizons On-Line Ephemeris System** and **NASA Lunar Reconnaissance Orbiter (LRO)** target catalog:
+  - Earth Gravitational Parameter ($\mu$): $398,600.44\text{ km}^3/\text{s}^2$
+  - Moon Gravitational Parameter ($\mu_{\text{moon}}$): $4,902.80\text{ km}^3/\text{s}^2$
+  - Trans-Lunar Injection (TLI) $\Delta V$: $3,120\text{ m/s}$
+  - Earth Escape Velocity ($V_{\text{esc}}$): $11.18\text{ km/s}$
+  - Lunar Capture $\Delta V$ (LOI to 100 km polar orbit): $820\text{ m/s}$
+  - Mean Earth-Moon Distance: $384,400\text{ km}$
 
-| Subsystem Block | Mass (kg) | Power (W) | Cost (XP) | Thrust (kN) | Data Rate | Engineering Purpose |
-| :--- | :---: | :---: | :---: | :---: | :---: | :--- |
-| **Solar Array Block** | 5 kg | **+50 W** | 10 XP | 0 kN | 0 MBps | Triple-junction GaAs photovoltaic generation in sunlight. |
-| **Battery Block** | 10 kg | 0 W | 5 XP | 0 kN | 0 MBps | Li-Fe-PO4 storage cell; buffers eclipse and high-pulse loads. |
-| **Multispectral Camera** | 15 kg | **-30 W** | 20 XP | 0 kN | **+50 MBps** | Science payload observing Earth/lunar surface spectral bands. |
-| **High-Gain Antenna** | 10 kg | **-15 W** | 15 XP | 0 kN | **-50 MBps** | X-band directional dish; downlinks packets to NASA DSN. |
-| **Ion Thruster** | 20 kg | **-40 W** | 25 XP | **50 kN** | 0 MBps | High-Isp electric Hall-effect engine for orbital escape burns. |
-
----
-
-## 🎮 How to Play
-
-1. **Select Mission Profile:** Choose between *Artemis Path: Lunar Orbiter*, *Earth Observation Sentinel*, or *Deep Space Asteroid Scout*.
-2. **Assemble Spacecraft:** Drag blocks from the hotbar into the 5x5 Vehicle Assembly Grid, or click a hotbar item and click any grid coordinate.
-3. **Monitor Live Telemetry:** Watch the real-time HUD gauges (Budget, Mass, Net Power, Thrust TWR, Data Comms).
-4. **Pre-Flight Diagnostics:** Check the status indicators on the right console.
-5. **Launch Mission:** Click **LAUNCH MISSION** to execute the NASA Flight Readiness Review. Watch the multi-stage launch visualization and earn your CML Mission Scorecard!
+### 7. Clean, Usable, and Accessible Interface
+- Distilled complex systems engineering metrics into 6 focused indicators.
+- One-click collapsible guides and clean modals keep the workspace uncluttered while retaining deep technical information for those who want it.
 
 ---
 
-## ⚡ Quick Start Options
+## How to Run
 
-### Option A: Instant Python Web Server (Recommended)
-Python is already installed on your system (`Python 3.13`):
-```powershell
-cd "c:\Users\Chethan\.gemini\antigravity\scratch\space-mission-design-game"
+### Option 1: Direct Double-Click (Zero Setup Required)
+Both HTML files are 100% self-contained and run directly from disk:
+- Double-click `minecraft.html` for the **3D Minecraft Spaceport Simulator**.
+- Double-click `index.html` for the **2D Systems Engineering Workbench**.
+
+### Option 2: Local HTTP Server (Recommended for Multiplayer Testing)
+Run using Python's built-in HTTP server:
+```bash
 python -m http.server 3000
 ```
-Open your browser to:
-- **3D Minecraft First-Person Simulation:** [http://localhost:3000/minecraft.html](http://localhost:3000/minecraft.html)
-- **NASA Space Mission Design Game (VAB):** [http://localhost:3000/index.html](http://localhost:3000/index.html)
+Then open in your browser:
+- `http://localhost:3000/minecraft.html` (Open 2 to 4 tabs to test 4-player multiplayer)
+- `http://localhost:3000/index.html`
 
-### Option B: Direct Browser Opening (Zero Web Server Required)
-You can double-click or open either file directly in Google Chrome, Microsoft Edge, or Firefox:
-- `C:\Users\Chethan\.gemini\antigravity\scratch\space-mission-design-game\minecraft.html`
-- `C:\Users\Chethan\.gemini\antigravity\scratch\space-mission-design-game\index.html`
-
-### Option C: Full Next.js Development Server (Requires Node.js)
-If you install Node.js:
-```powershell
-npm install
-npm run dev
-```
-
----
-
-## ⛏️ 3D First-Person Minecraft Simulation Features
-
-- **Game Perspective:** True 3D first-person camera with Pointer Lock mouse look, authentic crosshair (`+`), eye height at 1.62 blocks, and 3D hand/block viewmodel with walking bobbing and punch animations.
-- **Physics Engine:** Full voxel AABB collision detection, gravity, jumping, sneak speed, and Creative Flight mode (`F` key).
-- **Mining & Placing:** 
-  - **Left-Click:** Break blocks with 3D debris particle burst and crunchy sound effects.
-  - **Right-Click:** Place blocks against targeted face with solid placement sound.
-  - **TNT Explosions:** Detonate TNT blocks with shockwave particles, crater damage, and bass audio boom!
-- **Procedural World & Textures:** Rolling hills, deep stone caverns, ore veins (Diamond, Gold, Iron, Coal), sand beaches, and oak trees generated with 16x16 pixel-perfect textures.
-- **Hotbar & Inventory:** 9-slot classic hotbar (Keys 1-9 & Scroll Wheel), plus a full Creative Block Palette (`E` key).
-- **F3 Debug Screen:** Real-time FPS, XYZ coordinates, facing compass, and targeted block telemetry.
-- **World Persistence:** Save and load custom worlds directly to browser `localStorage`.
-
----
-
-## 🏆 Project Structure
-
-```
-space-mission-design-game/
-├── index.html                   # Zero-dependency instant playable web version
-├── package.json                 # Next.js 14 project manifest & dependencies
-├── tsconfig.json                # TypeScript compiler config
-├── tailwind.config.ts           # Tailwind CRT space theme configuration
-├── postcss.config.mjs
-├── next.config.mjs
-├── src/
-│   ├── app/
-│   │   ├── layout.tsx           # Dark mode HTML root layout
-│   │   ├── page.tsx             # Main application entry point
-│   │   └── globals.css          # CRT scanline effects & space scrollbar
-│   ├── components/
-│   │   ├── TelemetryHud.tsx     # Top telemetry progress HUD & preset loaders
-│   │   ├── MissionBriefing.tsx  # Left panel with CML profiles & constraints
-│   │   ├── AssemblyGrid.tsx     # 5x5 Minecraft-style VAB crafting matrix
-│   │   ├── InventoryHotbar.tsx  # Bottom component hotbar
-│   │   ├── LaunchConsole.tsx    # Right diagnostics panel & Launch button
-│   │   └── MissionVizModal.tsx  # Animated multi-stage launch & scorecard
-│   ├── context/
-│   │   └── GameContext.tsx      # Global physics & telemetry state + Web Audio SFX
-│   ├── data/
-│   │   ├── components.ts        # NASA CubeSat 101 component specs
-│   │   └── missions.ts          # Mission scenarios & objective data
-│   └── types/
-│       └── game.ts              # TypeScript interfaces & types
-└── README.md                    # Project documentation
-```
+### Controls in 3D Minecraft Mode:
+- **W / A / S / D**: Move astronaut
+- **Mouse**: Look around (click canvas to lock pointer, ESC to release)
+- **Space / Shift**: Jump & Fly Up / Crouch & Fly Down
+- **Left Click**: Remove block
+- **Right Click**: Place block
+- **1 - 9**: Select hotbar block
+- **E**: Open full component inventory
+- **F**: Toggle Creative Flight mode
+- **T**: Cycle Time of Day (Day $\to$ Sunset $\to$ Night $\to$ Sunrise)
+- **L**: Launch Rocket & Initiate Trajectory Review
