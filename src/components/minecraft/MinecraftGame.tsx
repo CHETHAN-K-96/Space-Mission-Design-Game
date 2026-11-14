@@ -27,7 +27,9 @@ import { ResourcesModal } from "./ResourcesModal";
 const INITIAL_TELEMETRY: TelemetryData = {
   blocksCount: 0,
   totalCostM: 0,
-  budgetRemaining: 600,
+  budgetRemaining: 160,
+  isOverBudget: false,
+  overBudgetAmount: 0,
   totalMass: 0,
   powerGen: 0,
   powerDraw: 0,
@@ -40,6 +42,10 @@ const INITIAL_TELEMETRY: TelemetryData = {
   batteryCount: 0,
   payloadCount: 0,
   sciencePts: 0,
+  hasPayloadContainer: false,
+  stage1Certified: false,
+  stage2Certified: false,
+  devStage: "STAGE_1_ROCKET",
 };
 
 export function MinecraftGame() {
@@ -466,7 +472,6 @@ export function MinecraftGame() {
         telemetry={telemetry}
         activeMission={activeMission}
         devStage={devStage}
-      />
       />
 
       <MissionDossierModal
