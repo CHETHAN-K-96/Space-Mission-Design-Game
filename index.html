@@ -1,0 +1,868 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NASA Space Mission Design Game | 2D Systems Engineering VAB</title>
+  
+  <!-- Zero-Dependency Inline Styling & Fonts -->
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Inter:wght@400;600;800&display=swap');
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: #030712;
+      color: #f1f5f9;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+    }
+
+    .font-mono {
+      font-family: 'Share Tech Mono', monospace;
+    }
+
+    /* Top Navigation HUD */
+    header {
+      background: rgba(15, 23, 42, 0.95);
+      border-bottom: 1px solid rgba(56, 189, 248, 0.3);
+      padding: 12px 24px;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.6);
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      backdrop-filter: blur(8px);
+    }
+
+    .brand-box {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .nasa-pill {
+      background: #dc2626;
+      color: #ffffff;
+      font-size: 10px;
+      font-weight: 800;
+      padding: 3px 8px;
+      border-radius: 4px;
+      letter-spacing: 1px;
+    }
+
+    .app-title {
+      font-size: 16px;
+      font-weight: 800;
+      color: #ffffff;
+      letter-spacing: 0.5px;
+    }
+
+    .app-sub {
+      font-size: 11px;
+      color: #94a3b8;
+    }
+
+    .header-nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .btn-3d-link {
+      background: linear-gradient(135deg, #059669, #10b981);
+      color: #ffffff;
+      text-decoration: none;
+      padding: 8px 14px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      border: 1px solid #34d399;
+      box-shadow: 0 0 16px rgba(16, 185, 129, 0.4);
+      transition: all 0.2s;
+    }
+
+    .btn-3d-link:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 0 24px rgba(16, 185, 129, 0.6);
+    }
+
+    /* Live Telemetry HUD Bar */
+    .telemetry-bar {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 10px;
+      padding: 12px 24px;
+      background: #0b1120;
+      border-bottom: 1px solid #1e293b;
+    }
+
+    .telemetry-card {
+      background: #0f172a;
+      border: 1px solid #334155;
+      padding: 8px 12px;
+      border-radius: 6px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .telemetry-card.alert {
+      border-color: #f43f5e !important;
+      background: rgba(136, 19, 55, 0.25) !important;
+    }
+
+    .t-label {
+      font-size: 10px;
+      color: #94a3b8;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .t-value {
+      font-size: 16px;
+      font-weight: 800;
+      color: #f8fafc;
+      margin-top: 2px;
+    }
+
+    .t-track {
+      width: 100%;
+      height: 4px;
+      background: #1e293b;
+      border-radius: 2px;
+      margin-top: 6px;
+      overflow: hidden;
+    }
+
+    .t-fill {
+      height: 100%;
+      transition: width 0.3s ease, background-color 0.3s;
+    }
+
+    /* Main Workspace Layout */
+    main {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 300px 1fr 320px;
+      gap: 20px;
+      padding: 20px 24px;
+      max-width: 1600px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    @media (max-width: 1100px) {
+      main {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .panel-card {
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid #1e293b;
+      border-radius: 8px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+    }
+
+    .panel-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: #38bdf8;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      border-bottom: 1px solid #1e293b;
+      padding-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* Mission Selector & Details */
+    .mission-select-input {
+      width: 100%;
+      background: #1e293b;
+      color: #38bdf8;
+      border: 1px solid #334155;
+      padding: 8px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      outline: none;
+      font-family: inherit;
+    }
+
+    .mission-desc-box {
+      background: #020617;
+      border: 1px solid #1e293b;
+      padding: 12px;
+      border-radius: 6px;
+      font-size: 11px;
+      line-height: 1.6;
+      color: #cbd5e1;
+    }
+
+    /* 5x5 Assembly Grid */
+    .vab-center {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .vab-grid-box {
+      background: #0b1120;
+      border: 2px solid #38bdf8;
+      border-radius: 10px;
+      padding: 12px;
+      box-shadow: 0 0 30px rgba(56, 189, 248, 0.2);
+    }
+
+    .grid-5x5 {
+      display: grid;
+      grid-template-columns: repeat(5, 72px);
+      grid-template-rows: repeat(5, 72px);
+      gap: 6px;
+    }
+
+    .grid-cell {
+      background: #1e293b;
+      border: 1px dashed #475569;
+      border-radius: 6px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      position: relative;
+      transition: all 0.15s ease;
+      padding: 4px;
+      text-align: center;
+    }
+
+    .grid-cell:hover {
+      background: #334155;
+      border-color: #38bdf8;
+      transform: scale(1.03);
+    }
+
+    .grid-cell.occupied {
+      border-style: solid;
+      border-color: #38bdf8;
+      background: #0f172a;
+    }
+
+    .cell-icon {
+      font-size: 22px;
+    }
+
+    .cell-label {
+      font-size: 8px;
+      font-weight: 700;
+      color: #94a3b8;
+      margin-top: 2px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      width: 100%;
+    }
+
+    /* Component Palette Drawer */
+    .palette-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-height: 480px;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+
+    .palette-item {
+      background: #1e293b;
+      border: 1px solid #334155;
+      padding: 8px 12px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .palette-item:hover, .palette-item.selected {
+      background: #0f2744;
+      border-color: #38bdf8;
+      box-shadow: 0 0 12px rgba(56, 189, 248, 0.25);
+    }
+
+    .item-icon-box {
+      width: 36px;
+      height: 36px;
+      background: #0f172a;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      border: 1px solid #334155;
+      flex-shrink: 0;
+    }
+
+    .item-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .item-name {
+      font-size: 12px;
+      font-weight: 700;
+      color: #f8fafc;
+    }
+
+    .item-meta {
+      font-size: 10px;
+      color: #94a3b8;
+      display: flex;
+      gap: 8px;
+      margin-top: 2px;
+    }
+
+    /* Right Console & Launch */
+    .btn-launch-main {
+      background: linear-gradient(135deg, #059669, #10b981);
+      color: #ffffff;
+      font-size: 14px;
+      font-weight: 800;
+      padding: 14px;
+      border: 1px solid #34d399;
+      border-radius: 8px;
+      cursor: pointer;
+      box-shadow: 0 4px 20px rgba(16, 185, 129, 0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.2s;
+    }
+
+    .btn-launch-main:hover {
+      background: linear-gradient(135deg, #10b981, #34d399);
+      box-shadow: 0 6px 28px rgba(16, 185, 129, 0.6);
+      transform: translateY(-2px);
+    }
+
+    .checklist-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 6px 8px;
+      background: #020617;
+      border: 1px solid #1e293b;
+      border-radius: 4px;
+      font-size: 11px;
+    }
+
+    .chk-pass { color: #34d399; }
+    .chk-fail { color: #f43f5e; font-weight: 700; }
+
+    /* Modal for Launch Animation */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(2, 6, 23, 0.92);
+      backdrop-filter: blur(8px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      padding: 20px;
+    }
+
+    .modal-overlay.active {
+      display: flex;
+    }
+
+    .launch-card {
+      background: #0b1329;
+      border: 2px solid #0284c7;
+      box-shadow: 0 0 50px rgba(2, 132, 199, 0.5);
+      border-radius: 10px;
+      width: 650px;
+      max-width: 95vw;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .rocket-anim-view {
+      height: 180px;
+      background: #020617;
+      border: 1px solid #1e293b;
+      border-radius: 8px;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .anim-rocket {
+      font-size: 54px;
+      position: absolute;
+      bottom: 20px;
+      transition: bottom 3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .anim-rocket.ascending {
+      bottom: 220px;
+    }
+
+    .anim-flame {
+      position: absolute;
+      bottom: 6px;
+      font-size: 24px;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .anim-flame.firing {
+      opacity: 1;
+      animation: flicker 0.1s infinite alternate;
+    }
+
+    @keyframes flicker {
+      0% { transform: scale(0.9); }
+      100% { transform: scale(1.15); }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Navigation Bar -->
+  <header>
+    <div class="brand-box">
+      <span class="nasa-pill">NASA JPL</span>
+      <div>
+        <div class="app-title">Space Mission Design Game</div>
+        <div class="app-sub font-mono">Systems Engineering & CubeSat 101 VAB</div>
+      </div>
+    </div>
+
+    <div class="header-nav-actions">
+      <a href="minecraft.html" class="btn-3d-link">
+        <span>⛏️</span> Switch to 3D Minecraft View
+      </a>
+      <button class="btn-3d-link" id="btn-quick-preset" style="background:#0284c7; border-color:#38bdf8;">
+        <span>✨</span> Load Certified Preset
+      </button>
+      <button class="btn-3d-link" id="btn-clear-all" style="background:#334155; border-color:#64748b;">
+        Clear Grid
+      </button>
+    </div>
+  </header>
+
+  <!-- Live Telemetry HUD Bar -->
+  <div class="telemetry-bar font-mono">
+    <div class="telemetry-card" id="card-budget">
+      <div class="t-label"><span>BUDGET (XP)</span><span id="hud-budget-ratio">0/100 XP</span></div>
+      <div class="t-value" id="hud-budget-val">100 XP</div>
+      <div class="t-track"><div class="t-fill" id="hud-budget-bar" style="width: 100%; background: #38bdf8;"></div></div>
+    </div>
+    <div class="telemetry-card" id="card-mass">
+      <div class="t-label"><span>TOTAL MASS</span><span id="hud-mass-blocks">0 Blocks</span></div>
+      <div class="t-value" id="hud-mass-val">0 kg</div>
+      <div class="t-track"><div class="t-fill" id="hud-mass-bar" style="width: 0%; background: #a855f7;"></div></div>
+    </div>
+    <div class="telemetry-card" id="card-power">
+      <div class="t-label"><span>NET POWER (EPS)</span><span id="hud-power-gen">+0W Gen</span></div>
+      <div class="t-value" id="hud-power-val">+0 W</div>
+      <div class="t-track"><div class="t-fill" id="hud-power-bar" style="width: 50%; background: #10b981;"></div></div>
+    </div>
+    <div class="telemetry-card" id="card-thrust">
+      <div class="t-label"><span>PROPULSION (TWR)</span><span id="hud-thrust-min">Min: 0 kN</span></div>
+      <div class="t-value" id="hud-thrust-val">0 kN (0.0x)</div>
+      <div class="t-track"><div class="t-fill" id="hud-thrust-bar" style="width: 0%; background: #f97316;"></div></div>
+    </div>
+    <div class="telemetry-card" id="card-comms">
+      <div class="t-label"><span>COMMS DOWNLINK</span><span id="hud-data-gen">+0 MBps</span></div>
+      <div class="t-value" id="hud-comms-val">0 MBps</div>
+      <div class="t-track"><div class="t-fill" id="hud-comms-bar" style="width: 0%; background: #06b6d4;"></div></div>
+    </div>
+  </div>
+
+  <!-- Main Workstation Layout -->
+  <main>
+    <!-- Left Panel: Mission Profile & Objectives -->
+    <div class="panel-card">
+      <div class="panel-title"><span>🛰️</span> Mission Objective</div>
+      <label for="mission-select" style="font-size: 11px; color: #94a3b8;">SELECT TARGET PROFILE:</label>
+      <select id="mission-select" class="mission-select-input font-mono">
+        <option value="artemis_lunar">Artemis: Lunar Transfer Orbiter (100 XP)</option>
+        <option value="earth_sentinel">Earth Observation Sentinel (120 XP)</option>
+        <option value="asteroid_scout">Deep Space Asteroid Scout (150 XP)</option>
+        <option value="space_telescope">James Webb Space Observatory (180 XP)</option>
+      </select>
+
+      <div class="mission-desc-box" id="mission-details">
+        <strong>Mission Objective:</strong><br>
+        Build a CubeSat capable of escaping Earth orbit and entering lunar orbit. Must survive eclipse occultation and downlink science data.
+      </div>
+
+      <div class="panel-title" style="margin-top: 8px;"><span>📦</span> Component Palette</div>
+      <div class="palette-list" id="palette-list">
+        <!-- Generated dynamically via script -->
+      </div>
+    </div>
+
+    <!-- Center: 5x5 VAB Assembly Matrix -->
+    <div class="panel-card vab-center">
+      <div class="panel-title" style="width: 100%;"><span>🔨</span> 5x5 Vehicle Assembly Bay (Click cell to place active component)</div>
+      <div class="vab-grid-box">
+        <div class="grid-5x5 font-mono" id="vab-grid">
+          <!-- 25 cells generated dynamically -->
+        </div>
+      </div>
+      <div style="font-size: 11px; color: #94a3b8; text-align: center;">
+        Left-click empty slot to place selected component. Click occupied slot to remove component.
+      </div>
+    </div>
+
+    <!-- Right Panel: Pre-Flight Checklist & Launch -->
+    <div class="panel-card">
+      <div class="panel-title"><span>📋</span> Flight Readiness Review</div>
+      <div style="display: flex; flex-direction: column; gap: 8px;" id="checklist-box">
+        <div class="checklist-item font-mono"><span>BUDGET MARGIN</span><span class="chk-pass" id="chk-budget">PASS</span></div>
+        <div class="checklist-item font-mono"><span>THRUST-TO-WEIGHT</span><span class="chk-pass" id="chk-thrust">PASS</span></div>
+        <div class="checklist-item font-mono"><span>POSITIVE POWER</span><span class="chk-pass" id="chk-power">PASS</span></div>
+        <div class="checklist-item font-mono"><span>ECLIPSE STORAGE</span><span class="chk-pass" id="chk-battery">PASS</span></div>
+        <div class="checklist-item font-mono"><span>COMMS DOWNLINK</span><span class="chk-pass" id="chk-comms">PASS</span></div>
+        <div class="checklist-item font-mono"><span>SCIENCE PAYLOAD</span><span class="chk-pass" id="chk-science">PASS</span></div>
+      </div>
+
+      <button class="btn-launch-main" id="btn-launch">
+        <span>🚀</span> LAUNCH MISSION REVIEW
+      </button>
+
+      <div style="font-size: 11px; color: #64748b; line-height: 1.5; margin-top: auto;">
+        *NASA CubeSat 101 Standard enforces positive solar margin and battery reserves during the 35-minute low Earth orbit eclipse umbra.
+      </div>
+    </div>
+  </main>
+
+  <!-- Animated Launch Simulation Modal -->
+  <div class="modal-overlay" id="launch-modal">
+    <div class="launch-card">
+      <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #1e293b; padding-bottom:8px;">
+        <h3 style="color:#38bdf8; font-size:16px;">NASA Flight Readiness Review & Launch</h3>
+        <button id="btn-close-modal" style="background:transparent; border:none; color:#94a3b8; cursor:pointer; font-size:16px;">✕</button>
+      </div>
+
+      <div class="rocket-anim-view">
+        <div class="anim-rocket" id="rocket-sprite">🚀</div>
+        <div class="anim-flame" id="flame-sprite">🔥</div>
+      </div>
+
+      <div style="background:#020617; border:1px solid #1e293b; border-radius:6px; padding:12px; font-family:'Share Tech Mono', monospace; font-size:12px; line-height:1.6; height:120px; overflow-y:auto;" id="launch-terminal-log">
+        <!-- Log items -->
+      </div>
+
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <div style="font-size:12px; font-weight:bold; color:#34d399;" id="modal-cml-rating">CML: Level 3 (Point Design Validated)</div>
+        <button class="btn-launch-main" id="btn-modal-dismiss" style="padding:8px 18px;">Acknowledge & Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pure JavaScript Systems Engineering Logic -->
+  <script>
+    // NASA Components Database
+    const COMPONENTS = [
+      { id: "booster", name: "Solid Rocket Booster", icon: "🚀", cost: 32, mass: 32, thrust: 120, power: 0, data: 0, science: 0, isBattery: false, isPayload: false },
+      { id: "bus", name: "1U CubeSat Frame", icon: "📦", cost: 5, mass: 4, thrust: 0, power: 0, data: 0, science: 0, isBattery: false, isPayload: false },
+      { id: "avionics", name: "C&DH Flight Computer", icon: "💻", cost: 12, mass: 6, thrust: 0, power: -10, data: 0, science: 0, isBattery: false, isPayload: false },
+      { id: "solar", name: "Triple-Junction Solar Array", icon: "🛰️", cost: 10, mass: 5, thrust: 0, power: 50, data: 0, science: 0, isBattery: false, isPayload: false },
+      { id: "battery", name: "LiFePO4 Battery Pack", icon: "🔋", cost: 10, mass: 10, thrust: 0, power: 0, data: 0, science: 0, isBattery: true, isPayload: false },
+      { id: "dish", name: "High-Gain X-Band Dish", icon: "📡", cost: 16, mass: 10, thrust: 0, power: -15, data: -50, science: 0, isBattery: false, isPayload: false },
+      { id: "patch", name: "UHF/VHF Patch Antenna", icon: "📶", cost: 8, mass: 4, thrust: 0, power: -6, data: -15, science: 0, isBattery: false, isPayload: false },
+      { id: "camera", name: "Multispectral Surface Imager", icon: "📷", cost: 20, mass: 14, thrust: 0, power: -25, data: 50, science: 80, isBattery: false, isPayload: true },
+      { id: "magnet", name: "Fluxgate Magnetometer", icon: "🧲", cost: 12, mass: 6, thrust: 0, power: -8, data: 15, science: 50, isBattery: false, isPayload: true },
+      { id: "ion", name: "Hall-Effect Ion Thruster", icon: "⚡", cost: 25, mass: 18, thrust: 50, power: -35, data: 0, science: 0, isBattery: false, isPayload: false },
+      { id: "rcs", name: "Cold-Gas RCS Microthrusters", icon: "💨", cost: 14, mass: 8, thrust: 25, power: -5, data: 0, science: 0, isBattery: false, isPayload: false }
+    ];
+
+    const MISSIONS = {
+      artemis_lunar: {
+        name: "Artemis: Lunar Transfer Orbiter",
+        budget: 100,
+        minThrust: 50,
+        minBatteries: 1,
+        minPayloads: 1,
+        desc: "NASA Artemis CSLI Mission: Build a CubeSat capable of escaping Earth orbit and entering lunar orbit. Must survive lunar eclipse with battery reserves."
+      },
+      earth_sentinel: {
+        name: "Earth Observation Sentinel",
+        budget: 120,
+        minThrust: 25,
+        minBatteries: 1,
+        minPayloads: 1,
+        desc: "NASA Earth Science Mission: Deploy multispectral imaging. Must balance telemetry downlink to prevent onboard storage buffer saturation."
+      },
+      asteroid_scout: {
+        name: "Deep Space Asteroid Scout",
+        budget: 150,
+        minThrust: 65,
+        minBatteries: 2,
+        minPayloads: 2,
+        desc: "JPL Deep Space Mission: Probe requires intense propulsion thrust for solar system escape velocity, dual batteries, and dual scientific sensors."
+      },
+      space_telescope: {
+        name: "James Webb-Class Space Observatory",
+        budget: 180,
+        minThrust: 100,
+        minBatteries: 2,
+        minPayloads: 2,
+        desc: "NASA Flagship Observatory: Demands extensive solar generation, high-bandwidth communications, and deep space payload."
+      }
+    };
+
+    // State
+    let activeComponent = COMPONENTS[0];
+    let activeMissionKey = "artemis_lunar";
+    let grid = new Array(25).fill(null);
+
+    // DOM Elements
+    const paletteListEl = document.getElementById('palette-list');
+    const vabGridEl = document.getElementById('vab-grid');
+    const missionSelectEl = document.getElementById('mission-select');
+    const missionDescEl = document.getElementById('mission-details');
+
+    // Build Palette
+    COMPONENTS.forEach(comp => {
+      const item = document.createElement('div');
+      item.className = `palette-item ${comp.id === activeComponent.id ? 'selected' : ''}`;
+      item.innerHTML = `
+        <div class="item-icon-box">${comp.icon}</div>
+        <div class="item-info">
+          <div class="item-name">${comp.name}</div>
+          <div class="item-meta font-mono">
+            <span style="color:#f59e0b;">${comp.cost} XP</span>
+            <span style="color:#a855f7;">${comp.mass} kg</span>
+            <span style="color:${comp.power >= 0 ? '#10b981' : '#38bdf8'};">${comp.power >= 0 ? '+' : ''}${comp.power}W</span>
+          </div>
+        </div>
+      `;
+      item.addEventListener('click', () => {
+        activeComponent = comp;
+        document.querySelectorAll('.palette-item').forEach(el => el.classList.remove('selected'));
+        item.classList.add('selected');
+      });
+      paletteListEl.appendChild(item);
+    });
+
+    // Build 5x5 Grid
+    for (let i = 0; i < 25; i++) {
+      const cell = document.createElement('div');
+      cell.className = 'grid-cell';
+      cell.id = `cell-${i}`;
+      cell.addEventListener('click', () => {
+        if (grid[i]) {
+          grid[i] = null;
+        } else {
+          grid[i] = activeComponent;
+        }
+        updateGridUI();
+        updateTelemetry();
+      });
+      vabGridEl.appendChild(cell);
+    }
+
+    function updateGridUI() {
+      for (let i = 0; i < 25; i++) {
+        const cell = document.getElementById(`cell-${i}`);
+        const item = grid[i];
+        if (item) {
+          cell.className = 'grid-cell occupied';
+          cell.innerHTML = `
+            <div class="cell-icon">${item.icon}</div>
+            <div class="cell-label">${item.name}</div>
+          `;
+        } else {
+          cell.className = 'grid-cell';
+          cell.innerHTML = '';
+        }
+      }
+    }
+
+    // Telemetry Engine
+    function updateTelemetry() {
+      const mission = MISSIONS[activeMissionKey];
+      let cost = 0;
+      let mass = 0;
+      let power = 0;
+      let thrust = 0;
+      let data = 0;
+      let batteries = 0;
+      let payloads = 0;
+      let blocksCount = 0;
+
+      grid.forEach(c => {
+        if (!c) return;
+        blocksCount++;
+        cost += c.cost;
+        mass += c.mass;
+        power += c.power;
+        thrust += c.thrust;
+        data += c.data;
+        if (c.isBattery) batteries++;
+        if (c.isPayload) payloads++;
+      });
+
+      const budgetRem = mission.budget - cost;
+      const twr = mass > 0 ? (thrust / (mass * 0.0098)).toFixed(1) : "0.0";
+      const minThrustReq = Math.ceil(mass * 0.0098);
+
+      // HUD updates
+      document.getElementById('hud-budget-ratio').textContent = `${cost}/${mission.budget} XP`;
+      document.getElementById('hud-budget-val').textContent = `${budgetRem >= 0 ? budgetRem : 'OVER'} XP`;
+      document.getElementById('hud-budget-bar').style.width = `${Math.min(Math.max((cost / mission.budget) * 100, 0), 100)}%`;
+      document.getElementById('hud-budget-bar').style.backgroundColor = budgetRem < 0 ? '#f43f5e' : '#38bdf8';
+      document.getElementById('card-budget').classList.toggle('alert', budgetRem < 0);
+
+      document.getElementById('hud-mass-blocks').textContent = `${blocksCount} Blocks`;
+      document.getElementById('hud-mass-val').textContent = `${mass} kg`;
+      document.getElementById('hud-mass-bar').style.width = `${Math.min(mass, 100)}%`;
+
+      document.getElementById('hud-power-val').textContent = `${power >= 0 ? '+' : ''}${power} W`;
+      document.getElementById('card-power').classList.toggle('alert', power < 0 && blocksCount > 0);
+
+      document.getElementById('hud-thrust-val').textContent = `${thrust} kN (${twr}x)`;
+      document.getElementById('hud-thrust-min').textContent = `Min: ${minThrustReq} kN`;
+      document.getElementById('card-thrust').classList.toggle('alert', parseFloat(twr) < 1.0 && blocksCount > 0);
+
+      document.getElementById('hud-comms-val').textContent = `${data} MBps`;
+
+      // Checklist Status
+      const chkBudget = budgetRem >= 0;
+      const chkThrust = thrust >= mission.minThrust && parseFloat(twr) >= 1.0;
+      const chkPower = power >= 0;
+      const chkBattery = batteries >= mission.minBatteries;
+      const chkComms = data <= 0; // Negative means downlink capacity exceeds payload generation
+      const chkScience = payloads >= mission.minPayloads;
+
+      setChecklistStatus('chk-budget', chkBudget);
+      setChecklistStatus('chk-thrust', chkThrust);
+      setChecklistStatus('chk-power', chkPower);
+      setChecklistStatus('chk-battery', chkBattery);
+      setChecklistStatus('chk-comms', chkComms);
+      setChecklistStatus('chk-science', chkScience);
+
+      return { chkBudget, chkThrust, chkPower, chkBattery, chkComms, chkScience, blocksCount };
+    }
+
+    function setChecklistStatus(id, pass) {
+      const el = document.getElementById(id);
+      el.textContent = pass ? "PASS" : "FAIL";
+      el.className = pass ? "chk-pass" : "chk-fail";
+    }
+
+    // Load Certified Preset
+    function loadPreset() {
+      grid.fill(null);
+      // Perfect certified Artemis Lunar configuration
+      grid[22] = COMPONENTS.find(c => c.id === 'booster');
+      grid[17] = COMPONENTS.find(c => c.id === 'bus');
+      grid[12] = COMPONENTS.find(c => c.id === 'avionics');
+      grid[11] = COMPONENTS.find(c => c.id === 'solar');
+      grid[13] = COMPONENTS.find(c => c.id === 'solar');
+      grid[7] = COMPONENTS.find(c => c.id === 'battery');
+      grid[18] = COMPONENTS.find(c => c.id === 'patch');
+      grid[2] = COMPONENTS.find(c => c.id === 'magnet');
+      updateGridUI();
+      updateTelemetry();
+    }
+
+    // Event Listeners
+    missionSelectEl.addEventListener('change', (e) => {
+      activeMissionKey = e.target.value;
+      missionDescEl.innerHTML = `<strong>Objective:</strong><br>${MISSIONS[activeMissionKey].desc}`;
+      updateTelemetry();
+    });
+
+    document.getElementById('btn-quick-preset').addEventListener('click', loadPreset);
+    document.getElementById('btn-clear-all').addEventListener('click', () => {
+      grid.fill(null);
+      updateGridUI();
+      updateTelemetry();
+    });
+
+    // Launch Animation Modal
+    const modalEl = document.getElementById('launch-modal');
+    const logEl = document.getElementById('launch-terminal-log');
+    const rocketEl = document.getElementById('rocket-sprite');
+    const flameEl = document.getElementById('flame-sprite');
+
+    document.getElementById('btn-launch').addEventListener('click', () => {
+      const status = updateTelemetry();
+      modalEl.classList.add('active');
+      logEl.innerHTML = '';
+      rocketEl.classList.remove('ascending');
+      flameEl.classList.remove('firing');
+
+      function appendLog(msg, color = '#cbd5e1') {
+        const div = document.createElement('div');
+        div.style.color = color;
+        div.textContent = msg;
+        logEl.appendChild(div);
+      }
+
+      appendLog(`[T-00:10:00] Initiating NASA Flight Readiness Review...`);
+
+      const allPass = status.chkBudget && status.chkThrust && status.chkPower && status.chkBattery && status.chkScience && status.blocksCount > 0;
+
+      if (allPass) {
+        appendLog(`[PASS] Budget Certified (${MISSIONS[activeMissionKey].name})`, '#34d399');
+        appendLog(`[PASS] Propulsion Authority Validated (TWR >= 1.0)`, '#34d399');
+        appendLog(`[PASS] EPS Bus Certified. Solar power margin positive.`, '#34d399');
+        appendLog(`[PASS] Eclipse occultation battery verified.`, '#34d399');
+        appendLog(`[PASS] Science payload instrumentation verified.`, '#34d399');
+        appendLog(`[T-00:00:00] GO FOR LAUNCH! MAIN ENGINES IGNITED!`, '#38bdf8');
+        document.getElementById('modal-cml-rating').textContent = "CML: Level 3 (Point Design Validated & Flight Certified)";
+        document.getElementById('modal-cml-rating').style.color = "#34d399";
+
+        setTimeout(() => {
+          flameEl.classList.add('firing');
+          rocketEl.classList.add('ascending');
+        }, 300);
+      } else {
+        appendLog(`[FAIL] Mission Abort: Constraints breached. Check pre-flight checklist.`, '#f43f5e');
+        document.getElementById('modal-cml-rating').textContent = "CML: Level 1 (Concept Abort - Redesign Required)";
+        document.getElementById('modal-cml-rating').style.color = "#f43f5e";
+      }
+    });
+
+    document.getElementById('btn-close-modal').addEventListener('click', () => modalEl.classList.remove('active'));
+    document.getElementById('btn-modal-dismiss').addEventListener('click', () => modalEl.classList.remove('active'));
+
+    // Init
+    loadPreset();
+  </script>
+</body>
+</html>
