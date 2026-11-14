@@ -1,5 +1,7 @@
 export type BlockType = number;
 
+export type DevStage = "STAGE_1_ROCKET" | "STAGE_2_SATELLITE";
+
 export interface ComponentDef {
   name: string;
   subsystem: string;
@@ -12,6 +14,7 @@ export interface ComponentDef {
   science_pts: number;
   is_battery?: boolean;
   is_payload?: boolean;
+  is_container?: boolean;
   desc: string;
   color: string;
 }
@@ -28,12 +31,17 @@ export interface MissionDef {
   counterpart?: string;
   scientificGoal?: string;
   desc: string;
+  stage1_desc?: string;
+  stage2_desc?: string;
+  recommended_rocket?: string;
 }
 
 export interface TelemetryData {
   blocksCount: number;
   totalCostM: number;
   budgetRemaining: number;
+  isOverBudget: boolean;
+  overBudgetAmount: number;
   totalMass: number;
   powerGen: number;
   powerDraw: number;
@@ -46,6 +54,10 @@ export interface TelemetryData {
   batteryCount: number;
   payloadCount: number;
   sciencePts: number;
+  hasPayloadContainer: boolean;
+  stage1Certified: boolean;
+  stage2Certified: boolean;
+  devStage: DevStage;
 }
 
 export type TimeOfDay = "DAY" | "SUNSET" | "NIGHT" | "SUNRISE";

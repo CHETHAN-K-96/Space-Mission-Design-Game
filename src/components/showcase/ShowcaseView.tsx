@@ -63,15 +63,9 @@ export function ShowcaseView() {
         <div className="flex items-center gap-3">
           <Link
             href="/"
-            className="px-3 py-2 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-mono text-xs font-semibold transition-all hover:scale-105"
-          >
-            ⚙️ 2D Systems VAB
-          </Link>
-          <Link
-            href="/minecraft"
             className="px-4 py-2 rounded-md bg-sky-600 hover:bg-sky-500 text-white border border-sky-400 font-mono text-xs font-bold shadow-lg shadow-sky-600/30 transition-all hover:scale-105"
           >
-            🎮 ENTER 3D FLIGHT VAB
+            🎮 ENTER 3D SPACEPORT & LAUNCH COMPLEX
           </Link>
         </div>
       </header>

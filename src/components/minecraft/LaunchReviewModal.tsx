@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useMemo } from "react";
-import { TelemetryData, MissionDef } from "../../engine/minecraft/types";
+import { TelemetryData, MissionDef, DevStage } from "../../engine/minecraft/types";
 
 interface LaunchReviewModalProps {
   isOpen: boolean;
@@ -9,6 +9,7 @@ interface LaunchReviewModalProps {
   onConfirmLaunch: () => void;
   telemetry: TelemetryData;
   activeMission: MissionDef;
+  devStage?: DevStage;
 }
 
 export function LaunchReviewModal({
@@ -17,13 +18,18 @@ export function LaunchReviewModal({
   onConfirmLaunch,
   telemetry,
   activeMission,
+  devStage = "STAGE_1_ROCKET",
 }: LaunchReviewModalProps) {
   const reviewResult = useMemo(() => {
     const logs: { text: string; type: "info" | "pass" | "fail" }[] = [];
     const errors: string[] = [];
 
     logs.push({
-      text: "T-00:10:00 - Flight Readiness Review initiated at Launch Complex 39A.",
+      text: `T-00:10:00 - Flight Readiness Review initiated at Launch Complex 39A [${
+        devStage === "STAGE_1_ROCKET"
+          ? "STAGE 1: ROCKET LAUNCH VEHICLE"
+          : "STAGE 2: SATELLITE PAYLOAD INTEGRATION"
+      }].`,
       type: "info",
     });
     logs.push({
@@ -32,9 +38,9 @@ export function LaunchReviewModal({
     });
 
     if (telemetry.blocksCount === 0) {
-      errors.push("Payload bay empty. No spacecraft mounted.");
+      errors.push("Launch pad empty. No rocket or spacecraft mounted.");
       logs.push({
-        text: "FAIL: Zero spacecraft components mounted on pad.",
+        text: "FAIL: Zero rocket components mounted on launch pad.",
         type: "fail",
       });
     }
@@ -42,9 +48,9 @@ export function LaunchReviewModal({
     const missionBudget = activeMission.budget_m;
     const currentCost = telemetry.totalCostM;
 
-    if (telemetry.budgetRemaining < 0) {
+    if (telemetry.isOverBudget) {
       errors.push(
-        `Budget ceiling breached by $${Math.abs(telemetry.budgetRemaining)}M.`
+        `Budget ceiling breached: $${currentCost}M spent exceeds $${missionBudget}M budget by $${telemetry.overBudgetAmount}M.`
       );
       logs.push({
         text: `FAIL: Cost ceiling breached ($${currentCost}M / $${missionBudget}M).`,
@@ -52,12 +58,12 @@ export function LaunchReviewModal({
       });
     } else {
       logs.push({
-        text: `PASS: Budget certified with $${telemetry.budgetRemaining}M reserve.`,
+        text: `PASS: Budget certified with $${telemetry.budgetRemaining}M reserve remaining.`,
         type: "pass",
       });
     }
 
-    if (telemetry.totalThrust < telemetry.minLiftThrust) {
+    if (telemetry.totalThrust < telemetry.minLiftThrust || telemetry.twr < 1.0) {
       errors.push(
         `TWR is ${telemetry.twr} < 1.0. Vehicle cannot lift off against gravity.`
       );
@@ -65,9 +71,9 @@ export function LaunchReviewModal({
         text: "FAIL: Gravity exceeds propulsion authority.",
         type: "fail",
       });
-    } else if (telemetry.totalThrust < activeMission.min_thrust_kn) {
+    } else if (telemetry.totalThrust < activeMission.min_thrust_kn * 0.75) {
       errors.push(
-        `Shortfall: Mission requires >= ${activeMission.min_thrust_kn} kN thrust.`
+        `Propulsion Shortfall: Mission requires >= ${activeMission.min_thrust_kn} kN launch thrust.`
       );
       logs.push({
         text: `FAIL: Trajectory shortfall. Requires >= ${activeMission.min_thrust_kn} kN.`,
@@ -80,72 +86,95 @@ export function LaunchReviewModal({
       });
     }
 
-    if (telemetry.netPower < 0) {
-      errors.push(
-        `Power brownout: Spacecraft experiences deficit of ${Math.abs(
-          telemetry.netPower
-        )} W in sunlight.`
-      );
+    if (devStage === "STAGE_1_ROCKET") {
+      // Stage 1 (Easy Rocket Architecture Mode) - does not check internal satellite wiring!
+      if (!telemetry.hasPayloadContainer) {
+        errors.push(
+          "No Satellite Container or Payload Adapter found. Place an upper stage adapter or container slot."
+        );
+        logs.push({
+          text: "FAIL: Missing top payload adapter or satellite container slot.",
+          type: "fail",
+        });
+      } else {
+        logs.push({
+          text: "PASS: Top satellite payload container slot detected.",
+          type: "pass",
+        });
+      }
       logs.push({
-        text: "FAIL: Electrical power system (EPS) brownout.",
-        type: "fail",
+        text: "STAGE 1 NOTE: Satellite sensor wiring and power closure deferred to Stage 2.",
+        type: "info",
       });
-    } else if (telemetry.powerGen === 0 && telemetry.blocksCount > 0) {
-      errors.push("No solar arrays installed. Spacecraft will exhaust batteries.");
-      logs.push({ text: "FAIL: Zero primary solar power source.", type: "fail" });
     } else {
-      logs.push({
-        text: `PASS: Positive solar power margin (+${telemetry.netPower} W).`,
-        type: "pass",
-      });
-    }
+      // Stage 2 (Intermediate Satellite Integration Mode) - validates electrical, power, and science
+      if (telemetry.netPower < 0) {
+        errors.push(
+          `Power deficit: Spacecraft experiences deficit of ${Math.abs(
+            telemetry.netPower
+          )} W in sunlight.`
+        );
+        logs.push({
+          text: "FAIL: Electrical power system (EPS) deficit.",
+          type: "fail",
+        });
+      } else if (telemetry.powerGen === 0 && telemetry.blocksCount > 0) {
+        errors.push("No solar arrays installed. Spacecraft will exhaust batteries.");
+        logs.push({ text: "FAIL: Zero primary solar power source.", type: "fail" });
+      } else {
+        logs.push({
+          text: `PASS: Positive solar power margin (+${telemetry.netPower} W).`,
+          type: "pass",
+        });
+      }
 
-    if (telemetry.batteryCount < activeMission.min_batteries) {
-      errors.push(
-        `Insufficient energy storage: Mission requires >= ${activeMission.min_batteries} Battery Pack(s) for 35-min eclipse.`
-      );
-      logs.push({
-        text: "FAIL: Spacecraft will perish in orbital eclipse shadow.",
-        type: "fail",
-      });
-    } else {
-      logs.push({
-        text: `PASS: Eclipse battery storage certified (${telemetry.batteryCount} units).`,
-        type: "pass",
-      });
-    }
+      if (telemetry.batteryCount < activeMission.min_batteries) {
+        errors.push(
+          `Insufficient energy storage: Mission requires >= ${activeMission.min_batteries} Battery Pack(s) for 35-min eclipse.`
+        );
+        logs.push({
+          text: "FAIL: Spacecraft will perish in orbital eclipse shadow.",
+          type: "fail",
+        });
+      } else {
+        logs.push({
+          text: `PASS: Eclipse battery storage certified (${telemetry.batteryCount} units).`,
+          type: "pass",
+        });
+      }
 
-    if (
-      activeMission.require_closed_comms &&
-      telemetry.dataGen > telemetry.dataDownlink
-    ) {
-      errors.push(
-        `Comms buffer overflow: Scientific instruments generate +${telemetry.dataGen} MBps but antenna only downlinks ${telemetry.dataDownlink} MBps.`
-      );
-      logs.push({
-        text: "FAIL: Onboard data buffer saturation.",
-        type: "fail",
-      });
-    } else {
-      logs.push({
-        text: "PASS: Telemetry downlink and DSN communication closed.",
-        type: "pass",
-      });
-    }
+      if (
+        activeMission.require_closed_comms &&
+        telemetry.dataGen > telemetry.dataDownlink
+      ) {
+        errors.push(
+          `Comms buffer overflow: Instruments generate +${telemetry.dataGen} MBps but antenna only downlinks ${telemetry.dataDownlink} MBps.`
+        );
+        logs.push({
+          text: "FAIL: Onboard data buffer saturation.",
+          type: "fail",
+        });
+      } else {
+        logs.push({
+          text: "PASS: Telemetry downlink and DSN communication closed.",
+          type: "pass",
+        });
+      }
 
-    if (telemetry.payloadCount < activeMission.min_payloads) {
-      errors.push(
-        `Primary science objective unfulfilled: Install at least ${activeMission.min_payloads} scientific instruments.`
-      );
-      logs.push({
-        text: "FAIL: Mission lacks primary sensor payload.",
-        type: "fail",
-      });
-    } else {
-      logs.push({
-        text: `PASS: Scientific payload certified (${telemetry.payloadCount} instruments, ${telemetry.sciencePts} science return).`,
-        type: "pass",
-      });
+      if (telemetry.payloadCount < activeMission.min_payloads) {
+        errors.push(
+          `Primary science objective unfulfilled: Install at least ${activeMission.min_payloads} scientific instruments.`
+        );
+        logs.push({
+          text: "FAIL: Primary science payload incomplete.",
+          type: "fail",
+        });
+      } else {
+        logs.push({
+          text: `PASS: Primary science instruments certified (${telemetry.sciencePts} Science Points).`,
+          type: "pass",
+        });
+      }
     }
 
     const isFlightCertified = errors.length === 0;

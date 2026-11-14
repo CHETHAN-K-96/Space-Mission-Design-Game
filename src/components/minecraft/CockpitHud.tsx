@@ -1,7 +1,12 @@
 "use client";
 
 import React from "react";
-import { TelemetryData, TimeOfDay, MissionDef } from "../../engine/minecraft/types";
+import {
+  TelemetryData,
+  TimeOfDay,
+  MissionDef,
+  DevStage,
+} from "../../engine/minecraft/types";
 
 interface CockpitHudProps {
   telemetry: TelemetryData;
@@ -12,12 +17,14 @@ interface CockpitHudProps {
   blueprintVisible: boolean;
   fairingCutaway?: boolean;
   blueprintMode?: "SATELLITE" | "FULL_VEHICLE" | "ROCKET";
+  devStage?: DevStage;
   onMissionChange: (key: string) => void;
   onAutoBuild: () => void;
   onEncloseFairing?: () => void;
   onToggleBlueprint: () => void;
   onToggleBlueprintMode?: () => void;
   onToggleCutaway?: () => void;
+  onToggleDevStage?: () => void;
   onLaunchReview: () => void;
   onCycleTime: () => void;
   onOpenDossier: () => void;
@@ -36,12 +43,14 @@ export function CockpitHud({
   blueprintVisible,
   fairingCutaway = false,
   blueprintMode = "FULL_VEHICLE",
+  devStage = "STAGE_1_ROCKET",
   onMissionChange,
   onAutoBuild,
   onEncloseFairing,
   onToggleBlueprint,
   onToggleBlueprintMode,
   onToggleCutaway,
+  onToggleDevStage,
   onLaunchReview,
   onCycleTime,
   onOpenDossier,
@@ -50,24 +59,21 @@ export function CockpitHud({
   onToggleFlight,
   onClearCraft,
 }: CockpitHudProps) {
-  const maxBudget = activeMission.budget_m || 100;
+  const maxBudget = activeMission.budget_m || 160;
   const currentCost = telemetry.totalCostM ?? 0;
-  const budgetRatio = `$${currentCost}M / $${maxBudget}M`;
-  const budgetVal = telemetry.budgetRemaining >= 0
-    ? `$${telemetry.budgetRemaining}M`
-    : `-$${Math.abs(telemetry.budgetRemaining)}M OVER`;
   const budgetPct = Math.min(
     Math.max((currentCost / maxBudget) * 100, 0),
     100
   );
-  const budgetAlert = telemetry.budgetRemaining < 0;
 
   const massPct = Math.min(telemetry.totalMass / 2, 100);
   const powerAlert =
-    telemetry.netPower < 0 && telemetry.blocksCount > 0;
-  const thrustAlert =
-    telemetry.twr < 1.0 && telemetry.blocksCount > 0;
+    devStage === "STAGE_2_SATELLITE" &&
+    telemetry.netPower < 0 &&
+    telemetry.blocksCount > 0;
+  const thrustAlert = telemetry.twr < 1.0 && telemetry.blocksCount > 0;
   const commsAlert =
+    devStage === "STAGE_2_SATELLITE" &&
     telemetry.dataGen > telemetry.dataDownlink &&
     activeMission.require_closed_comms;
 
@@ -89,23 +95,43 @@ export function CockpitHud({
           <select
             value={activeMissionKey}
             onChange={(e) => onMissionChange(e.target.value)}
-            className="bg-slate-800 text-sky-400 border border-sky-600 px-2 py-1 rounded font-mono text-[11px] cursor-pointer outline-none"
+            className="bg-slate-800 text-sky-400 border border-sky-600 px-2 py-1 rounded font-mono text-[11px] cursor-pointer outline-none font-bold"
           >
-            <option value="artemis_lunar">
-              Artemis: Lunar Transfer Orbiter ($600M)
-            </option>
             <option value="earth_sentinel">
-              Earth Observation Sentinel ($90M)
+              Earth Observation Sentinel ($160M)
             </option>
             <option value="asteroid_scout">
-              Deep Space Asteroid Scout ($180M)
+              Deep Space Asteroid Scout ($290M)
             </option>
             <option value="space_telescope">
-              James Webb Space Observatory ($350M)
+              James Webb Space Observatory ($520M)
             </option>
-            <option value="sandbox_mode">⚙️ Custom Sandbox Mode</option>
+            <option value="artemis_lunar">
+              Artemis: Lunar Transfer Orbiter ($880M)
+            </option>
+            <option value="sandbox_mode">⚙️ Custom Sandbox Mode ($1000M)</option>
           </select>
         </div>
+
+        {/* Development Stage Switcher */}
+        {onToggleDevStage && (
+          <button
+            onClick={onToggleDevStage}
+            className={`px-3 py-1 rounded border text-[11px] transition-all font-bold flex items-center gap-1.5 shadow-md ${
+              devStage === "STAGE_1_ROCKET"
+                ? "bg-amber-600 hover:bg-amber-500 text-white border-amber-400 shadow-amber-600/30"
+                : "bg-cyan-600 hover:bg-cyan-500 text-white border-cyan-400 shadow-cyan-600/30"
+            }`}
+            title="Toggle between Stage 1 (Rocket Construction) and Stage 2 (Satellite Payload Integration)"
+          >
+            <span>{devStage === "STAGE_1_ROCKET" ? "🚀" : "🛰️"}</span>
+            <span>
+              {devStage === "STAGE_1_ROCKET"
+                ? "STAGE 1: ROCKET BUILDER (EASY)"
+                : "STAGE 2: SATELLITE INTEGRATION"}
+            </span>
+          </button>
+        )}
 
         {/* Action Buttons */}
         <div className="flex items-center gap-1.5 flex-wrap text-xs">
@@ -207,24 +233,35 @@ export function CockpitHud({
         {/* Budget */}
         <div
           className={`bg-slate-900/90 border p-1.5 rounded-md shadow-md flex flex-col justify-between transition-colors ${
-            budgetAlert
+            telemetry.isOverBudget
               ? "border-rose-500 bg-rose-950/40"
               : "border-slate-700/80"
           }`}
         >
           <div className="flex justify-between text-[10px] text-slate-400">
             <span>BUDGET ($M)</span>
-            <span>{budgetRatio}</span>
+            <span>${currentCost}M / ${maxBudget}M</span>
           </div>
-          <div className="text-sm font-bold text-slate-100 mt-0.5">
-            {budgetVal}
+          <div className="text-sm font-bold text-slate-100 mt-0.5 flex justify-between items-baseline">
+            <span>${currentCost}M SPENT</span>
+            <span
+              className={`text-[10px] ${
+                telemetry.isOverBudget
+                  ? "text-rose-400 font-bold"
+                  : "text-emerald-400"
+              }`}
+            >
+              {telemetry.isOverBudget
+                ? `+$${telemetry.overBudgetAmount}M OVER`
+                : `$${telemetry.budgetRemaining}M LEFT`}
+            </span>
           </div>
           <div className="w-full h-1 bg-slate-800 rounded-sm mt-1 overflow-hidden">
             <div
               className="h-full transition-all duration-300"
               style={{
                 width: `${budgetPct}%`,
-                backgroundColor: budgetAlert ? "#f43f5e" : "#38bdf8",
+                backgroundColor: telemetry.isOverBudget ? "#f43f5e" : "#10b981",
               }}
             />
           </div>

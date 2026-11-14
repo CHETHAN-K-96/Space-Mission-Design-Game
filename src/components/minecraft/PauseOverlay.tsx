@@ -57,18 +57,12 @@ export function PauseOverlay({
           >
             TIME OF DAY: {timeOfDay}
           </button>
-          <div className="grid grid-cols-2 gap-2 mt-1">
-            <Link
-              href="/"
-              className="bg-slate-800 hover:bg-slate-700 text-sky-400 border border-slate-700 py-2 px-3 rounded-md text-xs font-semibold transition-all hover:border-sky-400 text-center"
-            >
-              ⚙️ 2D WORKBENCH
-            </Link>
+          <div className="grid grid-cols-1 gap-2 mt-1">
             <Link
               href="/showcase"
-              className="bg-slate-800 hover:bg-slate-700 text-purple-400 border border-slate-700 py-2 px-3 rounded-md text-xs font-semibold transition-all hover:border-purple-400 text-center"
+              className="bg-slate-800 hover:bg-slate-700 text-purple-400 border border-slate-700 py-2.5 px-3 rounded-md text-xs font-semibold transition-all hover:border-purple-400 text-center flex items-center justify-center gap-2"
             >
-              🧩 3D MODELS
+              <span>🧩</span> BROWSE ALL 3D AEROSPACE VOXEL MODELS
             </Link>
           </div>
         </div>

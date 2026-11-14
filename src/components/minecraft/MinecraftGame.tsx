@@ -4,6 +4,7 @@ import React, { useEffect, useRef, useState, useCallback } from "react";
 import { SpacecraftSimulator } from "../../engine/minecraft/Simulator";
 import { MISSIONS } from "../../engine/minecraft/constants";
 import {
+  DevStage,
   MissionDef,
   TelemetryData,
   TimeOfDay,
@@ -56,6 +57,7 @@ export function MinecraftGame() {
   const [blueprintVisible, setBlueprintVisible] = useState(true);
   const [blueprintMode, setBlueprintMode] = useState<"SATELLITE" | "FULL_VEHICLE">("FULL_VEHICLE");
   const [fairingCutaway, setFairingCutaway] = useState(false);
+  const [devStage, setDevStage] = useState<DevStage>("STAGE_1_ROCKET");
   const [isLocked, setIsLocked] = useState(false);
   const [gameStarted, setGameStarted] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
@@ -89,11 +91,21 @@ export function MinecraftGame() {
     altitude: string;
     velocity: string;
     stageName: string;
+    met?: string;
+    gForce?: string;
+    altKm?: number;
+    velKmh?: number;
+    mach?: number;
   }>({
     isVisible: false,
     altitude: "0.0 km",
     velocity: "0.00 km/s",
     stageName: "BOOSTER IGNITION",
+    met: "T+00:00",
+    gForce: "1.0 G",
+    altKm: 0,
+    velKmh: 0,
+    mach: 0,
   });
 
   const showNotification = useCallback((msg: string) => {
@@ -120,6 +132,7 @@ export function MinecraftGame() {
       onFlightModeChange: (flying) => setIsFlying(flying),
       onBlueprintChange: (visible) => setBlueprintVisible(visible),
       onBlueprintModeChange: (mode) => setBlueprintMode(mode),
+      onDevStageChange: (stage) => setDevStage(stage),
       onShroudChange: (cutaway) => setFairingCutaway(cutaway),
       onLockChange: (locked) => setIsLocked(locked),
       onHoverBlock: (blockType, worldPos) => {
@@ -132,12 +145,26 @@ export function MinecraftGame() {
           setHoveredWorldBlock(null);
         }
       },
-      onLaunchTelemetry: (alt, vel, stage) => {
+      onLaunchTelemetry: (
+        alt,
+        vel,
+        stage,
+        met = "T+00:00",
+        gForce = "1.0 G",
+        altKm = 0,
+        velKmh = 0,
+        mach = 0
+      ) => {
         setLaunchTelem({
           isVisible: true,
           altitude: alt,
           velocity: vel,
           stageName: stage,
+          met,
+          gForce,
+          altKm,
+          velKmh,
+          mach,
         });
       },
       onLaunchFinish: () => {
@@ -284,6 +311,12 @@ export function MinecraftGame() {
     }
   };
 
+  const handleToggleDevStage = () => {
+    if (simRef.current) {
+      simRef.current.toggleDevStage();
+    }
+  };
+
   const handleLaunchReview = () => {
     document.exitPointerLock?.();
     setShowLaunchReview(true);
@@ -356,12 +389,14 @@ export function MinecraftGame() {
         blueprintVisible={blueprintVisible}
         blueprintMode={blueprintMode}
         fairingCutaway={fairingCutaway}
+        devStage={devStage}
         onMissionChange={handleMissionChange}
         onAutoBuild={handleAutoBuild}
         onEncloseFairing={handleEncloseFairing}
         onToggleBlueprint={handleToggleBlueprint}
         onToggleBlueprintMode={handleToggleBlueprintMode}
         onToggleCutaway={handleToggleCutaway}
+        onToggleDevStage={handleToggleDevStage}
         onLaunchReview={handleLaunchReview}
         onCycleTime={handleCycleTime}
         onOpenDossier={() => {
@@ -389,6 +424,11 @@ export function MinecraftGame() {
         altitude={launchTelem.altitude}
         velocity={launchTelem.velocity}
         stageName={launchTelem.stageName}
+        met={launchTelem.met}
+        gForce={launchTelem.gForce}
+        altKm={launchTelem.altKm}
+        velKmh={launchTelem.velKmh}
+        mach={launchTelem.mach}
       />
 
       {/* Component Hover Tooltip */}
@@ -425,6 +465,8 @@ export function MinecraftGame() {
         onConfirmLaunch={handleConfirmLaunch}
         telemetry={telemetry}
         activeMission={activeMission}
+        devStage={devStage}
+      />
       />
 
       <MissionDossierModal

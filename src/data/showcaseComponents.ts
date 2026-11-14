@@ -732,6 +732,81 @@ export function createShowcaseComponents(): ShowcaseComponent[] {
       },
     },
 
+    {
+      id: "sat_payload_container",
+      name: "Standardized Satellite Payload Bay Slot",
+      subsystem: "STRUCTURE",
+      category: "ROCKET",
+      flightHeritage: "NASA SmallSat Standard Interface & CubeSat 101 Standard",
+      description:
+        "Standardized 1U/3U envelope slot for Stage 1 rocket planning. Holds the satellite payload for Stage 2 integration with androgynous alignment latches.",
+      recipe: "Composite Cradle Frame + Androgynous Alignment Latches + Gold Payload Core",
+      specs: { mass: "35 kg", power: "0 W", thrust: "0 kN", cost: "$1.0M" },
+      buildModel: () => {
+        const group = new THREE.Group();
+        const frameMat = new THREE.MeshStandardMaterial({
+          color: 0xd97706,
+          metalness: 0.8,
+          roughness: 0.3,
+        });
+        const topPlate = new THREE.Mesh(
+          new THREE.BoxGeometry(0.96, 0.05, 0.96),
+          frameMat
+        );
+        topPlate.position.y = 0.475;
+        group.add(topPlate);
+        const botPlate = new THREE.Mesh(
+          new THREE.BoxGeometry(0.96, 0.05, 0.96),
+          frameMat
+        );
+        botPlate.position.y = -0.475;
+        group.add(botPlate);
+
+        const cageMat = new THREE.MeshStandardMaterial({
+          color: 0x38bdf8,
+          transparent: true,
+          opacity: 0.35,
+          roughness: 0.2,
+          metalness: 0.8,
+        });
+        const cage = new THREE.Mesh(
+          new THREE.BoxGeometry(0.78, 0.78, 0.78),
+          cageMat
+        );
+        group.add(cage);
+
+        const coreMat = new THREE.MeshStandardMaterial({
+          color: 0xf59e0b,
+          metalness: 0.9,
+          roughness: 0.2,
+        });
+        const core = new THREE.Mesh(
+          new THREE.BoxGeometry(0.42, 0.42, 0.42),
+          coreMat
+        );
+        group.add(core);
+
+        const latchMat = new THREE.MeshStandardMaterial({
+          color: 0x94a3b8,
+          metalness: 0.8,
+        });
+        [
+          [-0.4, 0],
+          [0.4, 0],
+          [0, -0.4],
+          [0, 0.4],
+        ].forEach(([lx, lz]) => {
+          const latch = new THREE.Mesh(
+            new THREE.BoxGeometry(0.08, 0.16, 0.08),
+            latchMat
+          );
+          latch.position.set(lx, 0.42, lz);
+          group.add(latch);
+        });
+        return group;
+      },
+    },
+
     // =========================================================================
     // 2. SPACECRAFT PROPULSION & ATTITUDE THRUSTERS
     // =========================================================================

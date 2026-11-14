@@ -449,6 +449,37 @@ export const TextureGen = {
     return c;
   },
 
+  getSatPayloadContainer(): HTMLCanvasElement {
+    const c = this.createCanvas(32, 32);
+    const ctx = c.getContext("2d")!;
+    ctx.fillStyle = "#090d16";
+    ctx.fillRect(0, 0, 32, 32);
+    // Outer composite structural cradle
+    ctx.strokeStyle = "#f59e0b";
+    ctx.lineWidth = 2;
+    ctx.strokeRect(3, 3, 26, 26);
+    // Alignment chevron hatch marks
+    ctx.fillStyle = "#fbbf24";
+    ctx.fillRect(4, 4, 6, 3);
+    ctx.fillRect(22, 4, 6, 3);
+    ctx.fillRect(4, 25, 6, 3);
+    ctx.fillRect(22, 25, 6, 3);
+    // Translucent payload envelope target
+    ctx.fillStyle = "rgba(56, 189, 248, 0.25)";
+    ctx.fillRect(8, 8, 16, 16);
+    ctx.strokeStyle = "#38bdf8";
+    ctx.lineWidth = 1;
+    ctx.strokeRect(8, 8, 16, 16);
+    // Inner crosshair
+    ctx.beginPath();
+    ctx.moveTo(16, 10);
+    ctx.lineTo(16, 22);
+    ctx.moveTo(10, 16);
+    ctx.lineTo(22, 16);
+    ctx.stroke();
+    return c;
+  },
+
   getRCS(): HTMLCanvasElement {
     const c = this.createCanvas(32, 32);
     const ctx = c.getContext("2d")!;
@@ -681,6 +712,7 @@ export function initMaterials() {
     [BLOCKS.VACUUM_ENGINE]: TextureGen.getVacuumEngine(),
     [BLOCKS.LIQUID_FUEL_TANK]: TextureGen.getLiquidFuelTank(),
     [BLOCKS.UPPER_STAGE_TANK]: TextureGen.getUpperStageTank(),
+    [BLOCKS.SAT_PAYLOAD_CONTAINER]: TextureGen.getSatPayloadContainer(),
     [BLOCKS.LAUNCH_PAD_STEEL]: TextureGen.getLaunchPadSteel(),
     [BLOCKS.GANTRY_TOWER]: TextureGen.getGantryTower(),
     [BLOCKS.CONCRETE_TILES]: TextureGen.getLaunchPadSteel(),

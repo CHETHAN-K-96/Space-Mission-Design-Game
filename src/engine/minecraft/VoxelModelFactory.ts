@@ -724,6 +724,57 @@ export const VoxelModelFactory = {
       return group;
     }
 
+    if (type === BLOCKS.SAT_PAYLOAD_CONTAINER) {
+      const group = new THREE.Group();
+      addZeroGapDockingPlates(group, 0.96, 0.96, 0xd97706);
+
+      // Translucent payload envelope indicator cage
+      const cageMat = new THREE.MeshStandardMaterial({
+        color: 0x38bdf8,
+        transparent: true,
+        opacity: 0.35,
+        roughness: 0.2,
+        metalness: 0.8,
+      });
+      const cage = new THREE.Mesh(
+        new THREE.BoxGeometry(0.78, 0.78, 0.78),
+        cageMat
+      );
+      group.add(cage);
+
+      // Gold payload placeholder core
+      const coreMat = new THREE.MeshStandardMaterial({
+        color: 0xf59e0b,
+        metalness: 0.9,
+        roughness: 0.2,
+      });
+      const core = new THREE.Mesh(
+        new THREE.BoxGeometry(0.42, 0.42, 0.42),
+        coreMat
+      );
+      group.add(core);
+
+      // 4 guide alignment latches
+      const latchMat = new THREE.MeshStandardMaterial({
+        color: 0x94a3b8,
+        metalness: 0.8,
+      });
+      [
+        [-0.4, 0],
+        [0.4, 0],
+        [0, -0.4],
+        [0, 0.4],
+      ].forEach(([lx, lz]) => {
+        const latch = new THREE.Mesh(
+          new THREE.BoxGeometry(0.08, 0.16, 0.08),
+          latchMat
+        );
+        latch.position.set(lx, 0.42, lz);
+        group.add(latch);
+      });
+      return group;
+    }
+
     if (type === BLOCKS.BUS_FRAME) {
       const group = new THREE.Group();
       addZeroGapDockingPlates(group, 0.94, 0.94, 0x64748b);

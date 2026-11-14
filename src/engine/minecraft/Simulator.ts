@@ -12,7 +12,7 @@ import { initMaterials, MATERIALS } from "./TextureGen";
 import { soundEngine } from "./SoundEngine";
 import { VoxelWorld } from "./VoxelWorld";
 import { Player } from "./Player";
-import { MissionDef, TelemetryData, TimeOfDay } from "./types";
+import { DevStage, MissionDef, TelemetryData, TimeOfDay } from "./types";
 
 export interface SimulatorCallbacks {
   onTelemetryChange?: (telem: TelemetryData) => void;
@@ -22,9 +22,19 @@ export interface SimulatorCallbacks {
   onFlightModeChange?: (isFlying: boolean) => void;
   onBlueprintChange?: (visible: boolean) => void;
   onBlueprintModeChange?: (mode: "SATELLITE" | "FULL_VEHICLE") => void;
+  onDevStageChange?: (stage: DevStage) => void;
   onShroudChange?: (cutaway: boolean) => void;
   onLockChange?: (locked: boolean) => void;
-  onLaunchTelemetry?: (alt: string, vel: string, stage: string) => void;
+  onLaunchTelemetry?: (
+    alt: string,
+    vel: string,
+    stage: string,
+    met?: string,
+    gForce?: string,
+    altKm?: number,
+    velKmh?: number,
+    mach?: number
+  ) => void;
   onLaunchFinish?: () => void;
   onHoverBlock?: (
     blockType: number | null,
@@ -48,16 +58,41 @@ export class SpacecraftSimulator {
   public activeMission: MissionDef = MISSIONS["earth_sentinel"];
   public timeOfDayMode: TimeOfDay = "DAY";
   public fairingCutaway: boolean = false;
+  public devStage: DevStage = "STAGE_1_ROCKET";
+
+  public stage1Hotbar: number[] = [
+    BLOCKS.MERLIN_CLUSTER,
+    BLOCKS.LIQUID_FUEL_TANK,
+    BLOCKS.UPPER_STAGE_TANK,
+    BLOCKS.VACUUM_ENGINE,
+    BLOCKS.INTERSTAGE_RING,
+    BLOCKS.SOLID_BOOSTER,
+    BLOCKS.GRID_FIN,
+    BLOCKS.SAT_PAYLOAD_CONTAINER,
+    BLOCKS.PAYLOAD_FAIRING,
+  ];
+
+  public stage2Hotbar: number[] = [
+    BLOCKS.BUS_FRAME,
+    BLOCKS.AVIONICS_C_DH,
+    BLOCKS.SOLAR_ARRAY,
+    BLOCKS.SOLAR_WING,
+    BLOCKS.BATTERY_PACK,
+    BLOCKS.HIGH_GAIN_DISH,
+    BLOCKS.MULTISPECTRAL_CAM,
+    BLOCKS.MAGNETOMETER,
+    BLOCKS.REACTION_WHEEL,
+  ];
 
   public hotbarSlots: number[] = [
     BLOCKS.MERLIN_CLUSTER,
     BLOCKS.LIQUID_FUEL_TANK,
-    BLOCKS.INTERSTAGE_RING,
-    BLOCKS.VACUUM_ENGINE,
     BLOCKS.UPPER_STAGE_TANK,
-    BLOCKS.PAYLOAD_ADAPTER,
-    BLOCKS.AVIONICS_C_DH,
-    BLOCKS.MULTISPECTRAL_CAM,
+    BLOCKS.VACUUM_ENGINE,
+    BLOCKS.INTERSTAGE_RING,
+    BLOCKS.SOLID_BOOSTER,
+    BLOCKS.GRID_FIN,
+    BLOCKS.SAT_PAYLOAD_CONTAINER,
     BLOCKS.PAYLOAD_FAIRING,
   ];
   public activeSlotIdx: number = 0;
@@ -66,6 +101,7 @@ export class SpacecraftSimulator {
   public isMouseDown: boolean = false;
   public isLaunching: boolean = false;
   public launchAscentY: number = 0;
+  public launchTimeSec: number = 0;
   public launchStageName: string = "PAD_IGNITION";
   public exhaustParticles: {
     mesh: THREE.Mesh;
@@ -237,13 +273,45 @@ export class SpacecraftSimulator {
             (totalThrust / Math.max(totalMass * 0.0098 * gMult, 0.01)).toFixed(1)
           )
         : 0;
-    const budgetCap = this.activeMission.budget_m ?? 100;
-    const budgetRemaining = parseFloat((budgetCap - totalCostM).toFixed(1));
+
+    const budgetCap = this.activeMission.budget_m ?? 160;
+    const isOverBudget = totalCostM > budgetCap;
+    const overBudgetAmount = isOverBudget
+      ? parseFloat((totalCostM - budgetCap).toFixed(1))
+      : 0;
+    const budgetRemaining = Math.max(
+      0,
+      parseFloat((budgetCap - totalCostM).toFixed(1))
+    );
+
+    const hasPayloadContainer = blocks.some(
+      (b) =>
+        b.type === BLOCKS.SAT_PAYLOAD_CONTAINER ||
+        b.type === BLOCKS.PAYLOAD_ADAPTER ||
+        b.type === BLOCKS.DOCKING_PORT ||
+        b.type === BLOCKS.BUS_FRAME
+    );
+
+    const stage1Certified =
+      !isOverBudget &&
+      twr >= 1.2 &&
+      totalThrust >= (this.activeMission.min_thrust_kn * 0.75) &&
+      hasPayloadContainer &&
+      blocks.length >= 3;
+
+    const stage2Certified =
+      stage1Certified &&
+      netPower >= 0 &&
+      batteryCount >= (this.activeMission.min_batteries || 1) &&
+      payloadCount >= (this.activeMission.min_payloads || 1) &&
+      (!this.activeMission.require_closed_comms || dataDownlink >= dataGen);
 
     return {
       blocksCount: blocks.length,
       totalCostM: parseFloat(totalCostM.toFixed(1)),
       budgetRemaining,
+      isOverBudget,
+      overBudgetAmount,
       totalMass,
       powerGen,
       powerDraw,
@@ -256,7 +324,38 @@ export class SpacecraftSimulator {
       batteryCount,
       payloadCount,
       sciencePts,
+      hasPayloadContainer,
+      stage1Certified,
+      stage2Certified,
+      devStage: this.devStage,
     };
+  }
+
+  public setDevStage(stage: DevStage) {
+    this.devStage = stage;
+    if (stage === "STAGE_1_ROCKET") {
+      this.hotbarSlots = [...this.stage1Hotbar];
+      this.setBlueprintMode("FULL_VEHICLE");
+      this.callbacks.onNotification?.(
+        "🚀 STAGE 1 ACTIVE: ROCKET LAUNCH VEHICLE BUILDER (EASY)\nBuild rocket engines, tanks, and top satellite payload container."
+      );
+    } else {
+      this.hotbarSlots = [...this.stage2Hotbar];
+      this.setBlueprintMode("SATELLITE");
+      this.callbacks.onNotification?.(
+        "🛰️ STAGE 2 ACTIVE: SATELLITE PAYLOAD INTEGRATION (INTERMEDIATE)\nInstall solar wings, scientific instruments, batteries, and communications."
+      );
+    }
+    this.callbacks.onDevStageChange?.(stage);
+    this.triggerHUDUpdate();
+  }
+
+  public toggleDevStage() {
+    this.setDevStage(
+      this.devStage === "STAGE_1_ROCKET"
+        ? "STAGE_2_SATELLITE"
+        : "STAGE_1_ROCKET"
+    );
   }
 
   public triggerHUDUpdate() {
@@ -587,7 +686,10 @@ export class SpacecraftSimulator {
     let blueprintTargets: { x: number; y: number; z: number; type: number }[] =
       [];
 
-    if (this.blueprintMode === "SATELLITE") {
+    if (this.devStage === "STAGE_1_ROCKET" && this.blueprintMode !== "SATELLITE") {
+      // In Stage 1 Easy Rocket mode: guide guides rocket body, engines, tanks, and top satellite container
+      blueprintTargets = [...rocketTargets, ...shroudTargets];
+    } else if (this.blueprintMode === "SATELLITE") {
       // In Satellite mode, guide focuses on the inner payload core
       blueprintTargets = satelliteTargets;
     } else {
@@ -630,44 +732,43 @@ export class SpacecraftSimulator {
   public startLaunchSequence() {
     this.isLaunching = true;
     this.launchAscentY = 0;
+    this.launchTimeSec = 0;
     this.launchStageName = "PAD_IGNITION";
-
-    this.camera.position.set(PAD_X + 16, PAD_Y + 8, PAD_Z + 20);
-    this.camera.lookAt(PAD_X, PAD_Y + 4, PAD_Z);
 
     soundEngine.playLaunchRumble();
     this.callbacks.onNotification?.(
       "🚀 T-00:00: MAIN ENGINE IGNITION! ROCKET ASCENDING THROUGH THE ATMOSPHERE!"
     );
-    this.callbacks.onLaunchTelemetry?.("0.0 km", "0.00 km/s", "BOOSTER IGNITION");
 
     confetti({ particleCount: 160, spread: 90, origin: { y: 0.6 } });
 
-    // Stage 1: Max-Q
+    // Stage 1: Liftoff & Max-Q
     setTimeout(() => {
       if (this.isDestroyed) return;
-      this.launchStageName = "MAX_Q_THROTTLE";
+      this.launchStageName = "MAX_Q_TRANSONIC";
       this.callbacks.onNotification?.(
-        "T+00:45: VEHICLE PASSING THROUGH MAX-Q DYNAMIC PRESSURE!"
+        "T+00:45: VEHICLE PASSING THROUGH MAX-Q DYNAMIC PRESSURE (MACH 1.4)!"
       );
-    }, 1500);
+    }, 2500);
 
-    // Stage 2: Stage Separation
+    // Stage 2: Stage Separation (MECO)
     setTimeout(() => {
       if (this.isDestroyed) return;
       this.launchStageName = "STAGE_SEPARATION";
       this.callbacks.onNotification?.(
         "T+02:20: MECO CONFIRMED! FIRST STAGE SEPARATED! VACUUM UPPER ENGINE IGNITED!"
       );
-      this.setTimeOfDay("NIGHT");
-    }, 3200);
+      this.setTimeOfDay("SUNSET");
+    }, 5000);
 
-    // Stage 2.5: Fairing Separation (Atmospheric Exit)
+    // Stage 3: Fairing Jettison (Atmospheric Exit)
     setTimeout(() => {
       if (this.isDestroyed) return;
+      this.launchStageName = "FAIRING_JETTISON";
       this.callbacks.onNotification?.(
         "T+03:15: PAYLOAD FAIRING JETTISONED! SATELLITE EXPOSED TO SPACE VACUUM!"
       );
+      this.setTimeOfDay("NIGHT");
       [BLOCKS.ROCKET_BODY_SHROUD, BLOCKS.PAYLOAD_FAIRING].forEach((bType) => {
         const mat = MATERIALS[bType];
         if (mat) {
@@ -678,17 +779,17 @@ export class SpacecraftSimulator {
         }
       });
       this.world.rebuildMeshes();
-    }, 4200);
+    }, 7500);
 
-    // Stage 3: Orbital Insertion
+    // Stage 4: Orbital Insertion
     setTimeout(() => {
       if (this.isDestroyed) return;
       this.launchStageName = "ORBITAL_INSERTION";
       this.callbacks.onNotification?.(
-        "T+04:30: ORBITAL INSERTION ACHIEVED! SATELLITE PAYLOAD ONLINE!"
+        "T+04:30: ORBITAL INSERTION ACHIEVED! SATELLITE PAYLOAD ONLINE IN TARGET ORBIT!"
       );
       confetti({ particleCount: 220, spread: 130, origin: { y: 0.5 } });
-    }, 5200);
+    }, 10000);
 
     // Finish
     setTimeout(() => {
@@ -696,9 +797,9 @@ export class SpacecraftSimulator {
       this.isLaunching = false;
       this.callbacks.onLaunchFinish?.();
       this.callbacks.onNotification?.(
-        "MISSION SUCCESS: SPACECRAFT OPERATIONAL IN ORBIT!"
+        "MISSION SUCCESS: 100% FLIGHT READINESS OBJECTIVES ACHIEVED!"
       );
-    }, 7500);
+    }, 13000);
   }
 
   private spawnExhaustPlume() {
@@ -912,7 +1013,8 @@ export class SpacecraftSimulator {
     }
 
     if (this.isLaunching) {
-      this.launchAscentY += dt * (12 + this.launchAscentY * 0.45);
+      this.launchTimeSec += dt;
+      this.launchAscentY += dt * (8 + this.launchTimeSec * 4.5);
 
       const craftBlocks = this.world.getSpacecraftBlocks();
       craftBlocks.forEach((b) => {
@@ -923,20 +1025,80 @@ export class SpacecraftSimulator {
         }
       });
 
-      this.camera.lookAt(PAD_X, PAD_Y + this.launchAscentY, PAD_Z);
+      // Realistic flight telemetry calculations
+      const altM = Math.round(this.launchAscentY * 420);
+      const altKm = parseFloat((altM / 1000).toFixed(2));
+      const velMs = Math.round(
+        Math.min(7800, this.launchAscentY * 9.5 + this.launchTimeSec * 110)
+      );
+      const velKmh = Math.round(velMs * 3.6);
+      const velKmS = (velMs / 1000).toFixed(2);
+      const mach = parseFloat((velMs / 340.29).toFixed(1));
+      const gForce =
+        (1.0 + Math.min(3.5, this.launchTimeSec * 0.3)).toFixed(1) + " G";
 
-      const altKm = (this.launchAscentY * 1.5).toFixed(1);
-      const velKmS = (this.launchAscentY * 0.12).toFixed(2);
+      const totalSec = Math.floor(this.launchTimeSec * 22);
+      const metMin = Math.floor(totalSec / 60)
+        .toString()
+        .padStart(2, "0");
+      const metSec = (totalSec % 60).toString().padStart(2, "0");
+      const met = `T+${metMin}:${metSec}`;
+
       this.callbacks.onLaunchTelemetry?.(
-        `${altKm} km`,
-        `${velKmS} km/s`,
-        this.launchStageName
+        `${altKm} km (${altM.toLocaleString()} m)`,
+        `${velKmS} km/s (${velKmh.toLocaleString()} km/h | Mach ${mach})`,
+        this.launchStageName,
+        met,
+        gForce,
+        altKm,
+        velKmh,
+        mach
       );
 
-      this.spawnExhaustPlume();
+      // CINEMATIC MULTI-ANGLE CAMERA TRACKING:
+      const t = this.launchTimeSec;
+      if (t < 2.5) {
+        // Angle 1: Pad Hero Ground Shot looking up at the roaring engine nozzles
+        this.camera.position.set(
+          PAD_X + 11 + Math.sin(t * 1.5) * 1.2,
+          PAD_Y + 1.2,
+          PAD_Z + 13 + Math.cos(t * 1.5) * 1.2
+        );
+        this.camera.lookAt(PAD_X, PAD_Y + 2 + this.launchAscentY * 0.6, PAD_Z);
+        // Heavy rocket launch vibration
+        this.camera.position.x += (Math.random() - 0.5) * 0.28;
+        this.camera.position.y += (Math.random() - 0.5) * 0.28;
+      } else if (t < 5.0) {
+        // Angle 2: Gantry Umbilical Tower Tracking Cam
+        const p2T = (t - 2.5) / 2.5;
+        this.camera.position.set(
+          PAD_X + 18 - p2T * 5,
+          PAD_Y + 10 + p2T * 22,
+          PAD_Z + 19 - p2T * 5
+        );
+        this.camera.lookAt(PAD_X, PAD_Y + this.launchAscentY, PAD_Z);
+        this.camera.position.x += (Math.random() - 0.5) * 0.12;
+      } else if (t < 8.0) {
+        // Angle 3: Supersonic Stratospheric Chase Cam
+        const orbitAngle = (t - 5.0) * 0.5;
+        const camDist = 20;
+        this.camera.position.set(
+          PAD_X + Math.cos(orbitAngle) * camDist,
+          PAD_Y + this.launchAscentY - 5,
+          PAD_Z + Math.sin(orbitAngle) * camDist
+        );
+        this.camera.lookAt(PAD_X, PAD_Y + this.launchAscentY + 4, PAD_Z);
+      } else {
+        // Angle 4: Staging & Space Orbit Cam
+        this.camera.position.set(
+          PAD_X + 22,
+          PAD_Y + this.launchAscentY + 3,
+          PAD_Z + 22
+        );
+        this.camera.lookAt(PAD_X, PAD_Y + this.launchAscentY, PAD_Z);
+      }
 
-      this.camera.position.x += (Math.random() - 0.5) * 0.08;
-      this.camera.position.z += (Math.random() - 0.5) * 0.08;
+      this.spawnExhaustPlume();
     }
 
     for (let i = this.exhaustParticles.length - 1; i >= 0; i--) {
