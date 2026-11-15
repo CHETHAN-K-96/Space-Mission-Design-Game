@@ -25,6 +25,7 @@ import {
   ShieldAlert,
   ShieldCheck,
   MoreHorizontal,
+  Orbit,
 } from "lucide-react";
 
 interface CockpitHudProps {
@@ -52,6 +53,7 @@ interface CockpitHudProps {
   onToggleFlight: () => void;
   onClearCraft: () => void;
   onOpenStory?: () => void;
+  onOpenOrbitSim?: () => void;
 }
 
 export function CockpitHud({
@@ -79,17 +81,35 @@ export function CockpitHud({
   onToggleFlight,
   onClearCraft,
   onOpenStory,
+  onOpenOrbitSim,
 }: CockpitHudProps) {
   const [showUtilities, setShowUtilities] = useState(false);
 
-  const maxBudget = activeMission.budget_m || 160;
-  const currentCost = telemetry.totalCostM ?? 0;
+  // Separate Stage 1 Aircraft vs Stage 2 Satellite Budget Calculations
+  const isStage1 = devStage === "STAGE_1_ROCKET";
+  const stageMaxBudget = isStage1
+    ? (telemetry.rocketBudgetM || activeMission.rocket_budget_m || 60)
+    : (telemetry.satelliteBudgetM || activeMission.satellite_budget_m || 100);
+  const stageCurrentCost = isStage1
+    ? (telemetry.rocketCostM ?? 0)
+    : (telemetry.satelliteCostM ?? 0);
+  const isStageOver = isStage1
+    ? telemetry.isRocketOverBudget
+    : telemetry.isSatelliteOverBudget;
+  const stageBudgetRemaining = isStage1
+    ? telemetry.rocketBudgetRemaining
+    : telemetry.satelliteBudgetRemaining;
+  const stageOverAmount = isStageOver
+    ? parseFloat(Math.max(0, stageCurrentCost - stageMaxBudget).toFixed(1))
+    : 0;
+
   const budgetPct = Math.min(
-    Math.max((currentCost / maxBudget) * 100, 0),
+    Math.max((stageCurrentCost / Math.max(stageMaxBudget, 1)) * 100, 0),
     100
   );
 
-  const massPct = Math.min(telemetry.totalMass / 2, 100);
+  const activeMass = isStage1 ? telemetry.rocketMass : telemetry.satelliteMass;
+  const massPct = Math.min(activeMass / 2, 100);
   const powerAlert =
     devStage === "STAGE_2_SATELLITE" &&
     telemetry.netPower < 0 &&
@@ -300,6 +320,16 @@ export function CockpitHud({
                   <BookOpen className="w-4 h-4 text-purple-400" />
                   <span>NASA Standards</span>
                 </button>
+                <button
+                  onClick={() => {
+                    onOpenOrbitSim?.();
+                    setShowUtilities(false);
+                  }}
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs text-sky-300 hover:bg-sky-950/40 transition-colors w-full text-left font-bold"
+                >
+                  <Orbit className="w-4 h-4 text-sky-400 animate-spin" />
+                  <span>3D Orbital Map (O)</span>
+                </button>
                 <div className="border-t border-slate-800 my-1" />
                 <button
                   onClick={() => {
@@ -319,28 +349,28 @@ export function CockpitHud({
 
       {/* Simplified Aerospace Telemetry Readout Grid */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 font-mono">
-        {/* Budget Metric */}
+        {/* Budget Metric (Dedicated for Stage 1 Aircraft vs Stage 2 Satellite) */}
         <div
           className={`bg-slate-950/85 border p-2 rounded-lg shadow-sm flex flex-col justify-between transition-colors ${
-            telemetry.isOverBudget
+            isStageOver
               ? "border-rose-500 bg-rose-950/30"
               : "border-slate-800"
           }`}
         >
           <div className="flex justify-between text-[10px] text-slate-400 uppercase tracking-wider">
-            <span>Budget Ceiling</span>
-            <span>${maxBudget}M Max</span>
+            <span>{isStage1 ? "Aircraft Budget" : "Satellite Budget"}</span>
+            <span>${stageMaxBudget}M Max</span>
           </div>
           <div className="text-sm font-bold text-slate-100 mt-1 flex justify-between items-baseline">
-            <span>${currentCost}M Spent</span>
+            <span>${stageCurrentCost}M Spent</span>
             <span
               className={`text-[10px] font-semibold ${
-                telemetry.isOverBudget ? "text-rose-400" : "text-emerald-400"
+                isStageOver ? "text-rose-400" : "text-emerald-400"
               }`}
             >
-              {telemetry.isOverBudget
-                ? `+$${telemetry.overBudgetAmount}M Over`
-                : `$${telemetry.budgetRemaining}M Left`}
+              {isStageOver
+                ? `+$${stageOverAmount}M Over`
+                : `$${stageBudgetRemaining}M Left`}
             </span>
           </div>
           <div className="w-full h-1 bg-slate-800 rounded-sm mt-1.5 overflow-hidden">
@@ -348,7 +378,7 @@ export function CockpitHud({
               className="h-full transition-all duration-300"
               style={{
                 width: `${budgetPct}%`,
-                backgroundColor: telemetry.isOverBudget ? "#f43f5e" : "#10b981",
+                backgroundColor: isStageOver ? "#f43f5e" : "#10b981",
               }}
             />
           </div>
@@ -357,11 +387,11 @@ export function CockpitHud({
         {/* Total Mass Metric */}
         <div className="bg-slate-950/85 border border-slate-800 p-2 rounded-lg shadow-sm flex flex-col justify-between">
           <div className="flex justify-between text-[10px] text-slate-400 uppercase tracking-wider">
-            <span>Vehicle Mass</span>
+            <span>{isStage1 ? "Aircraft Mass" : "Satellite Mass"}</span>
             <span>{telemetry.blocksCount} Components</span>
           </div>
           <div className="text-sm font-bold text-slate-100 mt-1">
-            {telemetry.totalMass.toLocaleString()} kg
+            {activeMass.toLocaleString()} kg
           </div>
           <div className="w-full h-1 bg-slate-800 rounded-sm mt-1.5 overflow-hidden">
             <div
@@ -371,38 +401,67 @@ export function CockpitHud({
           </div>
         </div>
 
-        {/* Propulsion / TWR Metric */}
-        <div
-          className={`bg-slate-950/85 border p-2 rounded-lg shadow-sm flex flex-col justify-between transition-colors ${
-            thrustAlert ? "border-amber-500 bg-amber-950/20" : "border-slate-800"
-          }`}
-        >
-          <div className="flex justify-between text-[10px] text-slate-400 uppercase tracking-wider">
-            <span>Propulsion Authority</span>
-            <span>Min: {telemetry.minLiftThrust} kN</span>
+        {/* Metric 3: Propulsion (Stage 1) or Science Payloads (Stage 2) */}
+        {isStage1 ? (
+          <div
+            className={`bg-slate-950/85 border p-2 rounded-lg shadow-sm flex flex-col justify-between transition-colors ${
+              thrustAlert ? "border-amber-500 bg-amber-950/20" : "border-slate-800"
+            }`}
+          >
+            <div className="flex justify-between text-[10px] text-slate-400 uppercase tracking-wider">
+              <span>Propulsion Authority</span>
+              <span>Min: {telemetry.minLiftThrust} kN</span>
+            </div>
+            <div className="text-sm font-bold text-slate-100 mt-1 flex justify-between items-baseline">
+              <span>{telemetry.totalThrust} kN</span>
+              <span
+                className={`text-[11px] font-bold ${
+                  telemetry.twr >= 1.0 ? "text-emerald-400" : "text-amber-400"
+                }`}
+              >
+                {telemetry.twr}x TWR
+              </span>
+            </div>
+            <div className="w-full h-1 bg-slate-800 rounded-sm mt-1.5 overflow-hidden">
+              <div
+                className="h-full bg-orange-500 transition-all duration-300"
+                style={{
+                  width: `${Math.min(telemetry.totalThrust / 2, 100)}%`,
+                }}
+              />
+            </div>
           </div>
-          <div className="text-sm font-bold text-slate-100 mt-1 flex justify-between items-baseline">
-            <span>{telemetry.totalThrust} kN</span>
-            <span
-              className={`text-[11px] font-bold ${
-                telemetry.twr >= 1.0 ? "text-emerald-400" : "text-amber-400"
-              }`}
-            >
-              {telemetry.twr}x TWR
-            </span>
+        ) : (
+          <div
+            className={`bg-slate-950/85 border p-2 rounded-lg shadow-sm flex flex-col justify-between transition-colors ${
+              telemetry.payloadCount < activeMission.min_payloads
+                ? "border-amber-500 bg-amber-950/20"
+                : "border-slate-800"
+            }`}
+          >
+            <div className="flex justify-between text-[10px] text-slate-400 uppercase tracking-wider">
+              <span>Mission Science &amp; Comms</span>
+              <span>Min: {activeMission.min_payloads} Payloads</span>
+            </div>
+            <div className="text-sm font-bold text-slate-100 mt-1 flex justify-between items-baseline">
+              <span>{telemetry.payloadCount} Payloads • {telemetry.batteryCount} Batt</span>
+              <span className="text-[10px] font-semibold text-sky-400">
+                {telemetry.dataDownlink} Mbps
+              </span>
+            </div>
+            <div className="w-full h-1 bg-slate-800 rounded-sm mt-1.5 overflow-hidden">
+              <div
+                className="h-full bg-sky-500 transition-all duration-300"
+                style={{
+                  width: `${Math.min((telemetry.payloadCount / Math.max(activeMission.min_payloads, 1)) * 100, 100)}%`,
+                }}
+              />
+            </div>
           </div>
-          <div className="w-full h-1 bg-slate-800 rounded-sm mt-1.5 overflow-hidden">
-            <div
-              className="h-full bg-orange-500 transition-all duration-300"
-              style={{
-                width: `${Math.min(telemetry.totalThrust / 2, 100)}%`,
-              }}
-            />
-          </div>
-        </div>
+        )}
 
-        {/* Stage-Dependent 4th Metric */}
-        {devStage === "STAGE_1_ROCKET" ? (
+        {/* Metric 4: Stage 1 Aero/Structure OR Stage 2 Solar EPS Balance */}
+        {isStage1 ? (
           <div
             className={`bg-slate-950/85 border p-2 rounded-lg shadow-sm flex flex-col justify-between transition-colors ${
               !telemetry.isStructurallyConnected || !telemetry.hasAerodynamicNose || !telemetry.hasPadEngine
@@ -413,7 +472,7 @@ export function CockpitHud({
             }`}
           >
             <div className="flex justify-between text-[10px] text-slate-400 uppercase tracking-wider">
-              <span>Structural &amp; Aero Integrity</span>
+              <span>Aircraft Launcher Aero</span>
               <span
                 className={`text-[10px] font-bold ${
                   telemetry.isStructurallyConnected && telemetry.hasAerodynamicNose
@@ -482,8 +541,8 @@ export function CockpitHud({
             }`}
           >
             <div className="flex justify-between text-[10px] text-slate-400 uppercase tracking-wider">
-              <span>Solar EPS Balance</span>
-              <span>+{telemetry.powerGen}W Gen</span>
+              <span>Solar EPS Margin</span>
+              <span>+{telemetry.powerGen}W | -{telemetry.powerDraw}W</span>
             </div>
             <div className="text-sm font-bold text-slate-100 mt-1">
               {telemetry.netPower >= 0 ? "+" : ""}
@@ -492,7 +551,7 @@ export function CockpitHud({
             <div className="w-full h-1 bg-slate-800 rounded-sm mt-1.5 overflow-hidden">
               <div
                 className="h-full bg-emerald-500 transition-all duration-300"
-                style={{ width: "50%" }}
+                style={{ width: `${Math.min(Math.max((telemetry.powerGen / 120) * 100, 10), 100)}%` }}
               />
             </div>
           </div>

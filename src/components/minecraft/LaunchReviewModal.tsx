@@ -1,8 +1,16 @@
 "use client";
 
 import React, { useMemo } from "react";
-import { TelemetryData, MissionDef, DevStage } from "../../engine/minecraft/types";
-import { CheckCircle2, AlertTriangle, X, Rocket } from "lucide-react";
+import { TelemetryData, MissionDef } from "../../engine/minecraft/types";
+import {
+  X,
+  AlertTriangle,
+  Rocket,
+  ShieldCheck,
+  CheckCircle2,
+  AlertCircle,
+  HelpCircle,
+} from "lucide-react";
 
 interface LaunchReviewModalProps {
   isOpen: boolean;
@@ -10,7 +18,12 @@ interface LaunchReviewModalProps {
   onConfirmLaunch: () => void;
   telemetry: TelemetryData;
   activeMission: MissionDef;
-  devStage?: DevStage;
+  devStage?: string;
+}
+
+interface ReviewLog {
+  text: string;
+  type: "pass" | "fail" | "info";
 }
 
 export function LaunchReviewModal({
@@ -19,18 +32,13 @@ export function LaunchReviewModal({
   onConfirmLaunch,
   telemetry,
   activeMission,
-  devStage = "STAGE_1_ROCKET",
 }: LaunchReviewModalProps) {
   const reviewResult = useMemo(() => {
-    const logs: { text: string; type: "info" | "pass" | "fail" }[] = [];
+    const logs: ReviewLog[] = [];
     const errors: string[] = [];
 
     logs.push({
-      text: `T-00:10:00 - Flight Readiness Review initiated at Launch Complex 39A [${
-        devStage === "STAGE_1_ROCKET"
-          ? "STAGE 1: ROCKET LAUNCH VEHICLE"
-          : "STAGE 2: SATELLITE PAYLOAD INTEGRATION"
-      }].`,
+      text: "=== NASA LAUNCH COMPLEX 39 FLIGHT READINESS REVIEW ===",
       type: "info",
     });
     logs.push({
@@ -38,38 +46,41 @@ export function LaunchReviewModal({
       type: "info",
     });
 
-    if (telemetry.blocksCount === 0) {
-      errors.push("Launch pad empty. No rocket or spacecraft mounted.");
+    // 1. STAGE 1 AIRCRAFT LAUNCHER CHECKS (STRICT LAUNCH GATES)
+    const rocketCount = telemetry.rocketBlocksCount ?? telemetry.blocksCount;
+    if (rocketCount === 0) {
+      errors.push("Launch pad empty. No rocket aircraft launcher mounted in Stage 1.");
       logs.push({
-        text: "FAIL: Zero rocket components mounted on launch pad.",
+        text: "FAIL: Zero rocket launcher components mounted on launch pad.",
         type: "fail",
       });
     }
 
-    const missionBudget = activeMission.budget_m;
-    const currentCost = telemetry.totalCostM;
-
-    if (telemetry.isOverBudget) {
+    // Stage 1 Aircraft Launcher Budget
+    if (telemetry.isRocketOverBudget) {
       errors.push(
-        `Budget ceiling breached: $${currentCost}M spent exceeds $${missionBudget}M budget by $${telemetry.overBudgetAmount}M.`
+        `Stage 1 Aircraft Budget Breached: $${telemetry.rocketCostM}M spent exceeds $${telemetry.rocketBudgetM}M budget by $${(
+          telemetry.rocketCostM - telemetry.rocketBudgetM
+        ).toFixed(1)}M.`
       );
       logs.push({
-        text: `FAIL: Cost ceiling breached ($${currentCost}M / $${missionBudget}M).`,
+        text: `FAIL: Aircraft launcher budget breached ($${telemetry.rocketCostM}M / $${telemetry.rocketBudgetM}M).`,
         type: "fail",
       });
     } else {
       logs.push({
-        text: `PASS: Budget certified with $${telemetry.budgetRemaining}M reserve remaining.`,
+        text: `PASS: Stage 1 Aircraft launcher budget certified ($${telemetry.rocketCostM}M / $${telemetry.rocketBudgetM}M, $${telemetry.rocketBudgetRemaining}M reserve).`,
         type: "pass",
       });
     }
 
+    // Propulsion authority & TWR
     if (telemetry.totalThrust < telemetry.minLiftThrust || telemetry.twr < 1.0) {
       errors.push(
         `TWR is ${telemetry.twr} < 1.0. Vehicle cannot lift off against gravity.`
       );
       logs.push({
-        text: "FAIL: Gravity exceeds propulsion authority.",
+        text: "FAIL: Gravity exceeds propulsion authority (TWR < 1.0).",
         type: "fail",
       });
     } else if (telemetry.totalThrust < activeMission.min_thrust_kn * 0.75) {
@@ -87,24 +98,24 @@ export function LaunchReviewModal({
       });
     }
 
-    // 1. Structural Docking & Contiguity Check (No Floating Blocks)
-    if (!telemetry.isStructurallyConnected && telemetry.blocksCount > 0) {
+    // Structural Docking & Contiguity Check (No Floating Blocks)
+    if (!telemetry.isStructurallyConnected && rocketCount > 0) {
       errors.push(
-        "Structural Discontinuity: Disconnected floating modules detected. All blocks must be docked and physically contiguous without air gaps."
+        "Structural Discontinuity: Disconnected floating modules detected. All rocket blocks must be docked and physically contiguous without air gaps."
       );
       logs.push({
-        text: "FAIL: Floating modules detected. Vehicle structure has air gaps.",
+        text: "FAIL: Floating modules detected. Rocket launcher structure has air gaps.",
         type: "fail",
       });
-    } else if (telemetry.blocksCount > 0) {
+    } else if (rocketCount > 0) {
       logs.push({
         text: "PASS: 100% Structural contiguity verified. All stages docked without air gaps.",
         type: "pass",
       });
     }
 
-    // 2. Aerodynamic Fairing Capping Check
-    if (!telemetry.hasAerodynamicNose && telemetry.blocksCount > 0) {
+    // Aerodynamic Fairing Capping Check
+    if (!telemetry.hasAerodynamicNose && rocketCount > 0) {
       errors.push(
         "Aerodynamic Violation: Rocket is missing an aerodynamic nosecone fairing on top. Atmospheric Max-Q dynamic pressure will tear apart an unshielded blunt payload."
       );
@@ -112,15 +123,15 @@ export function LaunchReviewModal({
         text: "FAIL: Missing aerodynamic nosecone fairing on top of rocket.",
         type: "fail",
       });
-    } else if (telemetry.blocksCount > 0) {
+    } else if (rocketCount > 0) {
       logs.push({
         text: "PASS: Aerodynamic nosecone fairing installed. Max-Q airflow stream shielded.",
         type: "pass",
       });
     }
 
-    // 3. Launch Pad Ground Engine Check
-    if (!telemetry.hasPadEngine && telemetry.blocksCount > 0) {
+    // Launch Pad Ground Engine Check
+    if (!telemetry.hasPadEngine && rocketCount > 0) {
       errors.push("No primary liftoff engine installed at launch pad level.");
       logs.push({
         text: "FAIL: Zero liftoff propulsion engines mounted at pad level.",
@@ -128,7 +139,23 @@ export function LaunchReviewModal({
       });
     }
 
-    // 4. Any other structural issues from simulator
+    // Payload Container Block Check
+    if (telemetry.hasPayloadContainer) {
+      logs.push({
+        text: "PASS: Satellite payload container block mounted beneath nose fairing.",
+        type: "pass",
+      });
+    } else if (rocketCount > 0) {
+      errors.push(
+        "Payload Missing: No satellite payload container block installed in the payload bay."
+      );
+      logs.push({
+        text: "FAIL: Missing satellite payload container block.",
+        type: "fail",
+      });
+    }
+
+    // Any other structural issues from simulator
     if (telemetry.structuralIssues && telemetry.structuralIssues.length > 0) {
       telemetry.structuralIssues.forEach((issue) => {
         if (!errors.includes(issue)) {
@@ -141,97 +168,65 @@ export function LaunchReviewModal({
       });
     }
 
-    if (devStage === "STAGE_1_ROCKET") {
-      // Stage 1 (Rocket Launch Vehicle)
-      if (telemetry.hasPayloadContainer) {
-        logs.push({
-          text: "PASS: Satellite payload container block mounted beneath nose fairing.",
-          type: "pass",
-        });
-      } else {
-        errors.push(
-          "Payload Missing: No satellite payload container block installed in the payload bay."
-        );
-        logs.push({
-          text: "FAIL: Missing satellite payload container block.",
-          type: "fail",
-        });
-      }
+    // 2. STAGE 2 SATELLITE PAYLOAD CHECKS (NON-BLOCKING / ADVISORY)
+    // One can launch without developing or entering Stage 2; stage 2 violations do not block launch.
+    const satCount = telemetry.satelliteBlocksCount ?? 0;
+    if (satCount === 0) {
       logs.push({
-        text: "STAGE 1 NOTE: Aerodynamic rocket outer fuselage certified. Detailed satellite payloads integrate in Stage 2.",
+        text: "STAGE 2 ADVISORY: Satellite not yet customized (Rocket will launch with sealed payload container).",
         type: "info",
       });
     } else {
-      // Stage 2 (Intermediate Satellite Integration Mode) - validates electrical, power, and science
-      if (telemetry.netPower < 0) {
-        errors.push(
-          `Power deficit: Spacecraft experiences deficit of ${Math.abs(
-            telemetry.netPower
-          )} W in sunlight.`
-        );
+      if (telemetry.isSatelliteOverBudget) {
         logs.push({
-          text: "FAIL: Electrical power system (EPS) deficit.",
-          type: "fail",
+          text: `STAGE 2 ADVISORY: Satellite budget exceeded ($${telemetry.satelliteCostM}M / $${telemetry.satelliteBudgetM}M) - Non-blocking for rocket launch.`,
+          type: "info",
         });
-      } else if (telemetry.powerGen === 0 && telemetry.blocksCount > 0) {
-        errors.push("No solar arrays installed. Spacecraft will exhaust batteries.");
-        logs.push({ text: "FAIL: Zero primary solar power source.", type: "fail" });
       } else {
         logs.push({
-          text: `PASS: Positive solar power margin (+${telemetry.netPower} W).`,
+          text: `PASS: Stage 2 Satellite budget certified ($${telemetry.satelliteCostM}M / $${telemetry.satelliteBudgetM}M).`,
+          type: "pass",
+        });
+      }
+
+      if (telemetry.netPower < 0) {
+        logs.push({
+          text: `STAGE 2 ADVISORY: Satellite power deficit (${telemetry.netPower} W) - Non-blocking for rocket launch.`,
+          type: "info",
+        });
+      } else {
+        logs.push({
+          text: `PASS: Positive satellite solar power margin (+${telemetry.netPower} W).`,
           type: "pass",
         });
       }
 
       if (telemetry.batteryCount < activeMission.min_batteries) {
-        errors.push(
-          `Insufficient energy storage: Mission requires >= ${activeMission.min_batteries} Battery Pack(s) for 35-min eclipse.`
-        );
         logs.push({
-          text: "FAIL: Spacecraft will perish in orbital eclipse shadow.",
-          type: "fail",
+          text: `STAGE 2 ADVISORY: Satellite battery packs (${telemetry.batteryCount}/${activeMission.min_batteries}) below recommendation.`,
+          type: "info",
         });
       } else {
         logs.push({
-          text: `PASS: Eclipse battery storage certified (${telemetry.batteryCount} units).`,
-          type: "pass",
-        });
-      }
-
-      if (
-        activeMission.require_closed_comms &&
-        telemetry.dataGen > telemetry.dataDownlink
-      ) {
-        errors.push(
-          `Comms buffer overflow: Instruments generate +${telemetry.dataGen} MBps but antenna only downlinks ${telemetry.dataDownlink} MBps.`
-        );
-        logs.push({
-          text: "FAIL: Onboard data buffer saturation.",
-          type: "fail",
-        });
-      } else {
-        logs.push({
-          text: "PASS: Telemetry downlink and DSN communication closed.",
+          text: `PASS: Satellite battery packs certified (${telemetry.batteryCount} units).`,
           type: "pass",
         });
       }
 
       if (telemetry.payloadCount < activeMission.min_payloads) {
-        errors.push(
-          `Primary science objective unfulfilled: Install at least ${activeMission.min_payloads} scientific instruments.`
-        );
         logs.push({
-          text: "FAIL: Primary science payload incomplete.",
-          type: "fail",
+          text: `STAGE 2 ADVISORY: Satellite scientific payloads (${telemetry.payloadCount}/${activeMission.min_payloads}) below recommendation.`,
+          type: "info",
         });
       } else {
         logs.push({
-          text: `PASS: Primary science instruments certified (${telemetry.sciencePts} Science Points).`,
+          text: `PASS: Satellite scientific instrumentation certified (${telemetry.sciencePts} Science Points).`,
           type: "pass",
         });
       }
     }
 
+    // Launch readiness is strictly governed by the rocket aircraft launcher
     const isFlightCertified = errors.length === 0;
 
     return {
@@ -267,11 +262,10 @@ export function LaunchReviewModal({
         {/* Status Title Box */}
         <div className="bg-slate-950 border border-slate-800 p-3 rounded-md text-center">
           <div
-            className={`text-base font-bold ${
-              reviewResult.isFlightCertified
-                ? "text-emerald-400"
-                : "text-rose-400"
-            }`}
+            className={`text-base font-bold ${reviewResult.isFlightCertified
+              ? "text-emerald-400"
+              : "text-rose-400"
+              }`}
           >
             {reviewResult.isFlightCertified
               ? "FLIGHT READINESS CERTIFIED (PASS)"
@@ -279,13 +273,13 @@ export function LaunchReviewModal({
           </div>
           <div className="text-xs text-slate-400 mt-1">
             {reviewResult.isFlightCertified
-              ? "All NASA systems engineering requirements satisfied!"
+              ? "Aircraft launcher verified! Rocket is cleared for orbital launch."
               : reviewResult.errors[0]}
           </div>
         </div>
 
         {/* Review Logs Console */}
-        <div className="bg-slate-950 border border-slate-800 p-3 rounded-md h-40 overflow-y-auto text-xs leading-relaxed font-mono flex flex-col gap-1">
+        <div className="bg-slate-950 border border-slate-800 p-3 rounded-md h-44 overflow-y-auto text-xs leading-relaxed font-mono flex flex-col gap-1">
           {reviewResult.logs.map((item, idx) => (
             <div
               key={idx}
@@ -293,8 +287,8 @@ export function LaunchReviewModal({
                 item.type === "pass"
                   ? "text-emerald-400"
                   : item.type === "fail"
-                  ? "text-rose-400 font-bold"
-                  : "text-slate-400"
+                    ? "text-rose-400 font-bold"
+                    : "text-slate-400"
               }
             >
               {item.text}
@@ -305,15 +299,14 @@ export function LaunchReviewModal({
         {/* Footer Actions */}
         <div className="flex justify-between items-center pt-1">
           <div
-            className={`text-xs font-bold ${
-              reviewResult.isFlightCertified
-                ? "text-emerald-400"
-                : "text-rose-400"
-            }`}
+            className={`text-xs font-bold ${reviewResult.isFlightCertified
+              ? "text-emerald-400"
+              : "text-rose-400"
+              }`}
           >
             {reviewResult.isFlightCertified
               ? "CML: Level 3 (Point Design Validated & Flight Certified)"
-              : "CML: Level 1 (Concept Abort)"}
+              : "CML: Level 1 (Launcher Constraints Breached)"}
           </div>
 
           {reviewResult.isFlightCertified ? (
@@ -329,7 +322,7 @@ export function LaunchReviewModal({
           ) : (
             <div className="bg-rose-950/60 border border-rose-600/50 text-rose-300 text-xs px-3 py-2 rounded flex items-center gap-2">
               <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
-              <span>LAUNCH BLOCKED: Resolve all structural &amp; aerodynamic errors</span>
+              <span>LAUNCH BLOCKED: Resolve rocket structural &amp; propulsion errors</span>
             </div>
           )}
         </div>

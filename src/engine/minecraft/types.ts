@@ -52,6 +52,8 @@ export interface MissionDef {
   name: string;
   target: string;
   budget_m: number;
+  rocket_budget_m?: number;
+  satellite_budget_m?: number;
   min_thrust_kn: number;
   min_batteries: number;
   min_payloads: number;
@@ -99,10 +101,28 @@ export interface MissionDebriefScore {
 
 export interface TelemetryData {
   blocksCount: number;
+  rocketBlocksCount: number;
+  satelliteBlocksCount: number;
   totalCostM: number;
+  totalBudgetM?: number;
   budgetRemaining: number;
   isOverBudget: boolean;
   overBudgetAmount: number;
+
+  // Separate Stage 1 Aircraft / Rocket Budget & Metrics
+  rocketCostM: number;
+  rocketBudgetM: number;
+  rocketBudgetRemaining: number;
+  isRocketOverBudget: boolean;
+  rocketMass: number;
+
+  // Separate Stage 2 Satellite Budget & Metrics
+  satelliteCostM: number;
+  satelliteBudgetM: number;
+  satelliteBudgetRemaining: number;
+  isSatelliteOverBudget: boolean;
+  satelliteMass: number;
+
   totalMass: number;
   powerGen: number;
   powerDraw: number;

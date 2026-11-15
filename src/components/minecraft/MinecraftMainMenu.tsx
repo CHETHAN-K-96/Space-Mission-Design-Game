@@ -16,6 +16,7 @@ import {
   Check,
   X,
   ExternalLink,
+  Orbit,
 } from "lucide-react";
 
 interface MinecraftMainMenuProps {
@@ -26,6 +27,7 @@ interface MinecraftMainMenuProps {
   onSelectMission: (missionKey: string) => void;
   onCycleTime: () => void;
   onReplayStory: () => void;
+  onViewOrbitalTrajectory?: () => void;
 }
 
 const SPLASH_TEXTS = [
@@ -49,6 +51,7 @@ export function MinecraftMainMenu({
   onSelectMission,
   onCycleTime,
   onReplayStory,
+  onViewOrbitalTrajectory,
 }: MinecraftMainMenuProps) {
   const [splashText, setSplashText] = useState(SPLASH_TEXTS[0]);
   const [showMissionSelectModal, setShowMissionSelectModal] = useState(false);
@@ -153,6 +156,17 @@ export function MinecraftMainMenu({
             Inspect all 36+ aerospace voxel models
           </span>
         </Link>
+
+        {/* View 3D Orbital Trajectory Button */}
+        {onViewOrbitalTrajectory && (
+          <button
+            onClick={() => handleButtonClick(onViewOrbitalTrajectory)}
+            className="w-full bg-[#1e293b] hover:bg-[#334155] text-sky-300 py-2.5 px-4 border-t-2 border-l-2 border-sky-400/50 border-b-[3px] border-r-[3px] border-black/70 rounded-none shadow-md flex items-center justify-center gap-2 text-xs font-mono font-bold transition-all hover:scale-[1.01]"
+          >
+            <Orbit className="w-4 h-4 text-sky-400 animate-spin" />
+            <span>VIEW 3D ORBITAL TRAJECTORY (SPACE VIEW)</span>
+          </button>
+        )}
 
         {/* Split Utility Buttons Row */}
         <div className="grid grid-cols-2 gap-3 w-full mt-1">

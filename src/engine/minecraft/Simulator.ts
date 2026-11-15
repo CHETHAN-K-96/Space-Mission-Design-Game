@@ -62,6 +62,10 @@ export class SpacecraftSimulator {
   public fairingCutaway: boolean = false;
   public devStage: DevStage = "STAGE_1_ROCKET";
 
+  // Dedicated independent block sets for Stage 1 (Aircraft Launcher) and Stage 2 (Mission Satellite)
+  public rocketCraftBlocks: { x: number; y: number; z: number; type: number }[] = [];
+  public satelliteCraftBlocks: { x: number; y: number; z: number; type: number }[] = [];
+
   public stage1Hotbar: number[] = [
     BLOCKS.MERLIN_CLUSTER,
     BLOCKS.LIQUID_FUEL_TANK,
@@ -225,26 +229,42 @@ export class SpacecraftSimulator {
   }
 
   public computeTelemetry(): TelemetryData {
-    const blocks = this.world.getSpacecraftBlocks();
-    let totalCostM = 0;
-    let totalMass = 0;
+    // Synchronize currently active world blocks to their respective stage set
+    if (this.devStage === "STAGE_1_ROCKET") {
+      this.rocketCraftBlocks = this.world.getSpacecraftBlocks();
+    } else {
+      this.satelliteCraftBlocks = this.world.getSpacecraftBlocks();
+    }
+
+    // 1. Stage 1 (Aircraft Launcher / Rocket) metrics
+    let rocketCostM = 0;
+    let rocketMass = 0;
+    let totalThrust = 0;
+    this.rocketCraftBlocks.forEach((b) => {
+      const def = COMPONENT_DEFS[b.type];
+      if (!def) return;
+      rocketCostM += def.cost_m ?? 0;
+      rocketMass += def.mass_kg;
+      totalThrust += def.thrust_kn;
+    });
+
+    // 2. Stage 2 (Mission Satellite) metrics
+    let satelliteCostM = 0;
+    let satelliteMass = 0;
     let powerGen = 0;
     let powerDraw = 0;
-    let totalThrust = 0;
     let dataGen = 0;
     let dataDownlink = 0;
     let batteryCount = 0;
     let payloadCount = 0;
     let sciencePts = 0;
-
-    blocks.forEach((b) => {
+    this.satelliteCraftBlocks.forEach((b) => {
       const def = COMPONENT_DEFS[b.type];
       if (!def) return;
-      totalCostM += def.cost_m ?? 0;
-      totalMass += def.mass_kg;
+      satelliteCostM += def.cost_m ?? 0;
+      satelliteMass += def.mass_kg;
       if (def.power_w > 0) powerGen += def.power_w;
       else powerDraw += Math.abs(def.power_w);
-      totalThrust += def.thrust_kn;
       if (def.data_mbps > 0) dataGen += def.data_mbps;
       else dataDownlink += Math.abs(def.data_mbps);
       if (def.is_battery) batteryCount++;
@@ -254,6 +274,7 @@ export class SpacecraftSimulator {
 
     const gMult = this.activeMission.gravityMultiplier || 1.0;
     const netPower = powerGen - powerDraw;
+    const totalMass = rocketMass + satelliteMass;
     const minLiftThrust = Math.ceil(totalMass * 0.0098 * gMult);
     const twr =
       totalMass > 0
@@ -262,17 +283,49 @@ export class SpacecraftSimulator {
         )
         : 0;
 
-    const budgetCap = this.activeMission.budget_m ?? 160;
-    const isOverBudget = totalCostM > budgetCap;
+    // Separate budgets for aircraft and satellite
+    const rocketBudgetM =
+      this.activeMission.rocket_budget_m ??
+      Math.round((this.activeMission.budget_m || 160) * 0.4);
+    const satelliteBudgetM =
+      this.activeMission.satellite_budget_m ??
+      Math.round((this.activeMission.budget_m || 160) * 0.6);
+    const totalBudgetM = rocketBudgetM + satelliteBudgetM;
+
+    rocketCostM = parseFloat(rocketCostM.toFixed(1));
+    satelliteCostM = parseFloat(satelliteCostM.toFixed(1));
+    const totalCostM = parseFloat((rocketCostM + satelliteCostM).toFixed(1));
+
+    const isRocketOverBudget = rocketCostM > rocketBudgetM;
+    const rocketBudgetRemaining = Math.max(
+      0,
+      parseFloat((rocketBudgetM - rocketCostM).toFixed(1))
+    );
+
+    const isSatelliteOverBudget = satelliteCostM > satelliteBudgetM;
+    const satelliteBudgetRemaining = Math.max(
+      0,
+      parseFloat((satelliteBudgetM - satelliteCostM).toFixed(1))
+    );
+
+    const isOverBudget =
+      isRocketOverBudget ||
+      isSatelliteOverBudget ||
+      totalCostM > totalBudgetM;
     const overBudgetAmount = isOverBudget
-      ? parseFloat((totalCostM - budgetCap).toFixed(1))
+      ? parseFloat(
+          (
+            Math.max(0, rocketCostM - rocketBudgetM) +
+            Math.max(0, satelliteCostM - satelliteBudgetM)
+          ).toFixed(1)
+        )
       : 0;
     const budgetRemaining = Math.max(
       0,
-      parseFloat((budgetCap - totalCostM).toFixed(1))
+      parseFloat((totalBudgetM - totalCostM).toFixed(1))
     );
 
-    const hasPayloadContainer = blocks.some(
+    const hasPayloadContainer = this.rocketCraftBlocks.some(
       (b) =>
         b.type === BLOCKS.SAT_PAYLOAD_CONTAINER ||
         b.type === BLOCKS.PAYLOAD_ADAPTER ||
@@ -282,8 +335,8 @@ export class SpacecraftSimulator {
 
     const structuralIssues: string[] = [];
 
-    // 1. Pad Grounding & Primary Liftoff Engine Validation
-    const padBlocks = blocks.filter((b) => b.y === PAD_Y + 1);
+    // 1. Pad Grounding & Primary Liftoff Engine Validation (Stage 1 Rocket)
+    const padBlocks = this.rocketCraftBlocks.filter((b) => b.y === PAD_Y + 1);
     const hasPadEngine = padBlocks.some(
       (b) =>
         b.type === BLOCKS.MERLIN_CLUSTER ||
@@ -292,11 +345,11 @@ export class SpacecraftSimulator {
         (COMPONENT_DEFS[b.type]?.thrust_kn ?? 0) > 0
     );
 
-    if (blocks.length > 0 && padBlocks.length === 0) {
+    if (this.rocketCraftBlocks.length > 0 && padBlocks.length === 0) {
       structuralIssues.push(
         "Vehicle is not docked to the launch pad (no components touch pad at ground level)."
       );
-    } else if (blocks.length > 0 && !hasPadEngine) {
+    } else if (this.rocketCraftBlocks.length > 0 && !hasPadEngine) {
       structuralIssues.push(
         "Propulsion Failure: No primary liftoff engine installed at launch pad level."
       );
@@ -304,9 +357,9 @@ export class SpacecraftSimulator {
 
     // 2. 3D Adjacency Contiguity (Docking without Air Gaps / Floating Blocks)
     let isStructurallyConnected = false;
-    if (blocks.length > 0 && padBlocks.length > 0) {
+    if (this.rocketCraftBlocks.length > 0 && padBlocks.length > 0) {
       const posMap = new Map<string, { x: number; y: number; z: number; type: number }>();
-      blocks.forEach((b) => posMap.set(`${b.x},${b.y},${b.z}`, b));
+      this.rocketCraftBlocks.forEach((b) => posMap.set(`${b.x},${b.y},${b.z}`, b));
 
       const queue = [...padBlocks];
       const visited = new Set<string>(padBlocks.map((b) => `${b.x},${b.y},${b.z}`));
@@ -330,7 +383,7 @@ export class SpacecraftSimulator {
         }
       }
 
-      const unattachedBlocks = blocks.filter(
+      const unattachedBlocks = this.rocketCraftBlocks.filter(
         (b) => !visited.has(`${b.x},${b.y},${b.z}`)
       );
       if (unattachedBlocks.length > 0) {
@@ -341,13 +394,14 @@ export class SpacecraftSimulator {
       } else {
         isStructurallyConnected = true;
       }
+    } else if (this.rocketCraftBlocks.length === 0) {
+      isStructurallyConnected = false;
     }
 
     // 3. Aerodynamic Nosecone / Fairing Capping Validation
     let hasAerodynamicNose = false;
-    if (blocks.length > 0) {
-      // Find central core stack blocks
-      const centralBlocks = blocks.filter(
+    if (this.rocketCraftBlocks.length > 0) {
+      const centralBlocks = this.rocketCraftBlocks.filter(
         (b) => b.x === PAD_X && b.z === PAD_Z
       );
       let topCentralBlock: { x: number; y: number; z: number; type: number } | null = null;
@@ -356,13 +410,11 @@ export class SpacecraftSimulator {
         topCentralBlock = centralBlocks[0];
       }
 
-      // Find overall highest block of the spacecraft
-      const overallHighestBlock = blocks.reduce(
+      const overallHighestBlock = this.rocketCraftBlocks.reduce(
         (max, b) => (b.y > max.y ? b : max),
-        blocks[0]
+        this.rocketCraftBlocks[0]
       );
 
-      // Must be an aerodynamic nose fairing or shroud
       const isTopAero =
         topCentralBlock?.type === BLOCKS.PAYLOAD_FAIRING ||
         topCentralBlock?.type === BLOCKS.ROCKET_BODY_SHROUD ||
@@ -380,27 +432,27 @@ export class SpacecraftSimulator {
     }
 
     // 4. Propellant & Staging Verification
-    const hasFuelTanks = blocks.some(
+    const hasFuelTanks = this.rocketCraftBlocks.some(
       (b) =>
         b.type === BLOCKS.LIQUID_FUEL_TANK ||
         b.type === BLOCKS.CRYOGENIC_TANK ||
         b.type === BLOCKS.UPPER_STAGE_TANK
     );
-    if (blocks.length > 0 && !hasFuelTanks) {
+    if (this.rocketCraftBlocks.length > 0 && !hasFuelTanks) {
       structuralIssues.push(
         "Fuel Shortfall: No liquid propellant or cryogenic fuel tanks installed to feed engines."
       );
     }
 
-    if (blocks.length > 0 && !hasPayloadContainer) {
+    if (this.rocketCraftBlocks.length > 0 && !hasPayloadContainer) {
       structuralIssues.push(
         "Payload Missing: No satellite payload container block installed in the payload bay."
       );
     }
 
     const stage1Certified =
-      !isOverBudget &&
-      twr >= 1.2 &&
+      !isRocketOverBudget &&
+      twr >= 1.0 &&
       totalThrust >= (this.activeMission.min_thrust_kn * 0.75) &&
       hasPayloadContainer &&
       hasPadEngine &&
@@ -408,21 +460,38 @@ export class SpacecraftSimulator {
       hasAerodynamicNose &&
       hasFuelTanks &&
       structuralIssues.length === 0 &&
-      blocks.length >= 4;
+      this.rocketCraftBlocks.length >= 4;
 
     const stage2Certified =
-      stage1Certified &&
+      !isSatelliteOverBudget &&
       netPower >= 0 &&
       batteryCount >= (this.activeMission.min_batteries || 1) &&
       payloadCount >= (this.activeMission.min_payloads || 1) &&
-      (!this.activeMission.require_closed_comms || dataDownlink >= dataGen);
+      (!this.activeMission.require_closed_comms || dataDownlink >= dataGen) &&
+      this.satelliteCraftBlocks.length >= 1;
 
     return {
-      blocksCount: blocks.length,
-      totalCostM: parseFloat(totalCostM.toFixed(1)),
+      blocksCount:
+        this.devStage === "STAGE_1_ROCKET"
+          ? this.rocketCraftBlocks.length
+          : this.satelliteCraftBlocks.length,
+      rocketBlocksCount: this.rocketCraftBlocks.length,
+      satelliteBlocksCount: this.satelliteCraftBlocks.length,
+      totalCostM,
+      totalBudgetM,
       budgetRemaining,
       isOverBudget,
       overBudgetAmount,
+      rocketCostM,
+      rocketBudgetM,
+      rocketBudgetRemaining,
+      isRocketOverBudget,
+      rocketMass,
+      satelliteCostM,
+      satelliteBudgetM,
+      satelliteBudgetRemaining,
+      isSatelliteOverBudget,
+      satelliteMass,
       totalMass,
       powerGen,
       powerDraw,
@@ -447,20 +516,36 @@ export class SpacecraftSimulator {
   }
 
   public setDevStage(stage: DevStage) {
+    if (this.devStage === stage) return;
+
+    // 1. Save current world blocks into current stage
+    if (this.devStage === "STAGE_1_ROCKET") {
+      this.rocketCraftBlocks = this.world.getSpacecraftBlocks();
+    } else {
+      this.satelliteCraftBlocks = this.world.getSpacecraftBlocks();
+    }
+
     this.devStage = stage;
+
+    // 2. Clear world and load the new stage's blocks
+    this.world.clearSpacecraft();
+
     if (stage === "STAGE_1_ROCKET") {
+      this.rocketCraftBlocks.forEach((t) => this.world.setBlock(t.x, t.y, t.z, t.type));
       this.hotbarSlots = [...this.stage1Hotbar];
       this.setBlueprintMode("FULL_VEHICLE");
       this.callbacks.onNotification?.(
-        "STAGE 1 ACTIVE: ROCKET LAUNCH VEHICLE BUILDER\nBuild rocket engines, tanks, and top satellite payload container."
+        "STAGE 1 ACTIVE: AIRCRAFT LAUNCH VEHICLE BUILDER\nBuild rocket engines, tanks, and top satellite payload container."
       );
     } else {
+      this.satelliteCraftBlocks.forEach((t) => this.world.setBlock(t.x, t.y, t.z, t.type));
       this.hotbarSlots = [...this.stage2Hotbar];
       this.setBlueprintMode("SATELLITE");
       this.callbacks.onNotification?.(
-        "STAGE 2 ACTIVE: SATELLITE PAYLOAD INTEGRATION\nInstall solar wings, scientific instruments, batteries, and communications."
+        "STAGE 2 ACTIVE: MISSION SATELLITE PAYLOAD INTEGRATION\nInstall solar wings, scientific instruments, batteries, and communications."
       );
     }
+
     this.callbacks.onDevStageChange?.(stage);
     this.triggerHUDUpdate();
   }
@@ -565,14 +650,22 @@ export class SpacecraftSimulator {
         { x: cx, y: cy + 8, z: cz, type: BLOCKS.SAT_PAYLOAD_CONTAINER },
         { x: cx, y: cy + 9, z: cz, type: BLOCKS.PAYLOAD_FAIRING },
       ];
+      // Stage 2: Sentinel-6 Ocean Altimetry Satellite (assembled on satellite stand)
       satelliteTargets = [
-        { x: cx, y: cy + 8, z: cz, type: BLOCKS.SAT_PAYLOAD_CONTAINER },
+        { x: cx, y: cy, z: cz, type: BLOCKS.BUS_FRAME },
+        { x: cx, y: cy + 1, z: cz, type: BLOCKS.AVIONICS_C_DH },
+        { x: cx - 1, y: cy, z: cz, type: BLOCKS.SOLAR_ARRAY },
+        { x: cx + 1, y: cy, z: cz, type: BLOCKS.SOLAR_ARRAY },
+        { x: cx, y: cy, z: cz + 1, type: BLOCKS.RADAR_SAR },
+        { x: cx, y: cy, z: cz - 1, type: BLOCKS.MULTISPECTRAL_CAM },
+        { x: cx, y: cy + 1, z: cz + 1, type: BLOCKS.PATCH_ANTENNA },
+        { x: cx, y: cy + 2, z: cz, type: BLOCKS.BATTERY_PACK },
       ];
       shroudTargets = [];
     } else if (missionKey === "space_telescope") {
       // Ariane 5 ECA (James Webb Space Telescope)
       // Core: Vulcain 2 engine + 4 cryogenic tanks + interstage + upper stage + payload + fairing
-      // Twin EAP Solid Boosters: 6 BLOCKS TALL (More than half the rocket size, reaching up to cy + 5!)
+      // Twin EAP Solid Boosters: 6 BLOCKS TALL
       rocketTargets = [
         // Center Core
         { x: cx, y: cy, z: cz, type: BLOCKS.RS25_ENGINE },
@@ -586,7 +679,7 @@ export class SpacecraftSimulator {
         { x: cx, y: cy + 8, z: cz, type: BLOCKS.SAT_PAYLOAD_CONTAINER },
         { x: cx, y: cy + 9, z: cz, type: BLOCKS.PAYLOAD_FAIRING },
 
-        // Left Solid Rocket Booster (EAP) - Half the size of the rocket (6 blocks tall!)
+        // Left Solid Rocket Booster (EAP)
         { x: cx - 1, y: cy, z: cz, type: BLOCKS.SOLID_BOOSTER },
         { x: cx - 1, y: cy + 1, z: cz, type: BLOCKS.SOLID_BOOSTER },
         { x: cx - 1, y: cy + 2, z: cz, type: BLOCKS.SOLID_BOOSTER },
@@ -594,7 +687,7 @@ export class SpacecraftSimulator {
         { x: cx - 1, y: cy + 4, z: cz, type: BLOCKS.SOLID_BOOSTER },
         { x: cx - 1, y: cy + 5, z: cz, type: BLOCKS.PAYLOAD_FAIRING },
 
-        // Right Solid Rocket Booster (EAP) - Half the size of the rocket (6 blocks tall!)
+        // Right Solid Rocket Booster (EAP)
         { x: cx + 1, y: cy, z: cz, type: BLOCKS.SOLID_BOOSTER },
         { x: cx + 1, y: cy + 1, z: cz, type: BLOCKS.SOLID_BOOSTER },
         { x: cx + 1, y: cy + 2, z: cz, type: BLOCKS.SOLID_BOOSTER },
@@ -602,13 +695,22 @@ export class SpacecraftSimulator {
         { x: cx + 1, y: cy + 4, z: cz, type: BLOCKS.SOLID_BOOSTER },
         { x: cx + 1, y: cy + 5, z: cz, type: BLOCKS.PAYLOAD_FAIRING },
       ];
+      // Stage 2: JWST Infrared Space Observatory (assembled on satellite stand)
       satelliteTargets = [
-        { x: cx, y: cy + 8, z: cz, type: BLOCKS.SAT_PAYLOAD_CONTAINER },
+        { x: cx, y: cy, z: cz, type: BLOCKS.BUS_FRAME },
+        { x: cx, y: cy + 1, z: cz, type: BLOCKS.AVIONICS_C_DH },
+        { x: cx, y: cy, z: cz + 1, type: BLOCKS.SPECTROMETER_IR },
+        { x: cx, y: cy, z: cz - 1, type: BLOCKS.MULTISPECTRAL_CAM },
+        { x: cx - 1, y: cy, z: cz, type: BLOCKS.RADIATOR_PANEL },
+        { x: cx + 1, y: cy, z: cz, type: BLOCKS.SOLAR_ARRAY },
+        { x: cx, y: cy + 2, z: cz, type: BLOCKS.BATTERY_PACK },
+        { x: cx, y: cy + 2, z: cz - 1, type: BLOCKS.BATTERY_PACK },
+        { x: cx, y: cy + 2, z: cz + 1, type: BLOCKS.HIGH_GAIN_DISH },
+        { x: cx, y: cy + 1, z: cz + 1, type: BLOCKS.REACTION_WHEEL },
       ];
       shroudTargets = [];
     } else if (missionKey === "asteroid_scout") {
       // Falcon Heavy (NASA Psyche Asteroid Scout)
-      // 3 Cores side-by-side: Central Core + 2 full-length side booster cores (6 blocks tall)
       rocketTargets = [
         // Center Core
         { x: cx, y: cy, z: cz, type: BLOCKS.MERLIN_CLUSTER },
@@ -622,7 +724,7 @@ export class SpacecraftSimulator {
         { x: cx, y: cy + 8, z: cz, type: BLOCKS.SAT_PAYLOAD_CONTAINER },
         { x: cx, y: cy + 9, z: cz, type: BLOCKS.PAYLOAD_FAIRING },
 
-        // Left Falcon Heavy Side Booster (Full 1st stage core)
+        // Left Falcon Heavy Side Booster
         { x: cx - 1, y: cy, z: cz, type: BLOCKS.SOLID_BOOSTER },
         { x: cx - 1, y: cy + 1, z: cz, type: BLOCKS.LIQUID_FUEL_TANK },
         { x: cx - 1, y: cy + 2, z: cz, type: BLOCKS.LIQUID_FUEL_TANK },
@@ -630,7 +732,7 @@ export class SpacecraftSimulator {
         { x: cx - 1, y: cy + 4, z: cz, type: BLOCKS.LIQUID_FUEL_TANK },
         { x: cx - 1, y: cy + 5, z: cz, type: BLOCKS.PAYLOAD_FAIRING },
 
-        // Right Falcon Heavy Side Booster (Full 1st stage core)
+        // Right Falcon Heavy Side Booster
         { x: cx + 1, y: cy, z: cz, type: BLOCKS.SOLID_BOOSTER },
         { x: cx + 1, y: cy + 1, z: cz, type: BLOCKS.LIQUID_FUEL_TANK },
         { x: cx + 1, y: cy + 2, z: cz, type: BLOCKS.LIQUID_FUEL_TANK },
@@ -638,13 +740,22 @@ export class SpacecraftSimulator {
         { x: cx + 1, y: cy + 4, z: cz, type: BLOCKS.LIQUID_FUEL_TANK },
         { x: cx + 1, y: cy + 5, z: cz, type: BLOCKS.PAYLOAD_FAIRING },
       ];
+      // Stage 2: Psyche Deep Space Asteroid Scout Probe
       satelliteTargets = [
-        { x: cx, y: cy + 8, z: cz, type: BLOCKS.SAT_PAYLOAD_CONTAINER },
+        { x: cx, y: cy, z: cz, type: BLOCKS.BUS_FRAME },
+        { x: cx, y: cy + 1, z: cz, type: BLOCKS.AVIONICS_C_DH },
+        { x: cx - 1, y: cy, z: cz, type: BLOCKS.SOLAR_WING },
+        { x: cx + 1, y: cy, z: cz, type: BLOCKS.SOLAR_WING },
+        { x: cx, y: cy, z: cz + 1, type: BLOCKS.MAGNETOMETER },
+        { x: cx, y: cy, z: cz - 1, type: BLOCKS.SPECTROMETER_IR },
+        { x: cx, y: cy + 2, z: cz, type: BLOCKS.BATTERY_PACK },
+        { x: cx, y: cy + 2, z: cz - 1, type: BLOCKS.BATTERY_PACK },
+        { x: cx, y: cy + 2, z: cz + 1, type: BLOCKS.HIGH_GAIN_DISH },
+        { x: cx, y: cy - 1, z: cz, type: BLOCKS.ION_THRUSTER },
       ];
       shroudTargets = [];
     } else if (missionKey === "artemis_lunar") {
       // SLS Block 1 (Artemis III Lunar Transfer Vehicle)
-      // Massive orange central core + two 5-segment solid rocket boosters (7 blocks tall!)
       rocketTargets = [
         // Center Core
         { x: cx, y: cy, z: cz, type: BLOCKS.RS25_ENGINE },
@@ -659,7 +770,7 @@ export class SpacecraftSimulator {
         { x: cx, y: cy + 9, z: cz, type: BLOCKS.SAT_PAYLOAD_CONTAINER },
         { x: cx, y: cy + 10, z: cz, type: BLOCKS.PAYLOAD_FAIRING },
 
-        // Left 5-Segment Solid Rocket Booster (7 blocks tall!)
+        // Left 5-Segment Solid Rocket Booster
         { x: cx - 1, y: cy, z: cz, type: BLOCKS.SOLID_BOOSTER },
         { x: cx - 1, y: cy + 1, z: cz, type: BLOCKS.SOLID_BOOSTER },
         { x: cx - 1, y: cy + 2, z: cz, type: BLOCKS.SOLID_BOOSTER },
@@ -668,7 +779,7 @@ export class SpacecraftSimulator {
         { x: cx - 1, y: cy + 5, z: cz, type: BLOCKS.SOLID_BOOSTER },
         { x: cx - 1, y: cy + 6, z: cz, type: BLOCKS.PAYLOAD_FAIRING },
 
-        // Right 5-Segment Solid Rocket Booster (7 blocks tall!)
+        // Right 5-Segment Solid Rocket Booster
         { x: cx + 1, y: cy, z: cz, type: BLOCKS.SOLID_BOOSTER },
         { x: cx + 1, y: cy + 1, z: cz, type: BLOCKS.SOLID_BOOSTER },
         { x: cx + 1, y: cy + 2, z: cz, type: BLOCKS.SOLID_BOOSTER },
@@ -677,8 +788,19 @@ export class SpacecraftSimulator {
         { x: cx + 1, y: cy + 5, z: cz, type: BLOCKS.SOLID_BOOSTER },
         { x: cx + 1, y: cy + 6, z: cz, type: BLOCKS.PAYLOAD_FAIRING },
       ];
+      // Stage 2: Orion Lunar Spacecraft & Trans-Lunar Payload
       satelliteTargets = [
-        { x: cx, y: cy + 9, z: cz, type: BLOCKS.SAT_PAYLOAD_CONTAINER },
+        { x: cx, y: cy, z: cz, type: BLOCKS.BUS_FRAME },
+        { x: cx, y: cy + 1, z: cz, type: BLOCKS.AVIONICS_C_DH },
+        { x: cx - 1, y: cy, z: cz, type: BLOCKS.SOLAR_WING },
+        { x: cx + 1, y: cy, z: cz, type: BLOCKS.SOLAR_WING },
+        { x: cx, y: cy, z: cz + 1, type: BLOCKS.RADAR_SAR },
+        { x: cx, y: cy, z: cz - 1, type: BLOCKS.MULTISPECTRAL_CAM },
+        { x: cx, y: cy + 2, z: cz, type: BLOCKS.BATTERY_PACK },
+        { x: cx - 1, y: cy + 1, z: cz, type: BLOCKS.BATTERY_PACK },
+        { x: cx + 1, y: cy + 1, z: cz, type: BLOCKS.BATTERY_PACK },
+        { x: cx, y: cy + 2, z: cz + 1, type: BLOCKS.HIGH_GAIN_DISH },
+        { x: cx, y: cy, z: cz - 2, type: BLOCKS.RCS_THRUSTER },
       ];
       shroudTargets = [];
     } else {
@@ -694,7 +816,12 @@ export class SpacecraftSimulator {
         { x: cx, y: cy + 7, z: cz, type: BLOCKS.PAYLOAD_FAIRING },
       ];
       satelliteTargets = [
-        { x: cx, y: cy + 6, z: cz, type: BLOCKS.SAT_PAYLOAD_CONTAINER },
+        { x: cx, y: cy, z: cz, type: BLOCKS.BUS_FRAME },
+        { x: cx, y: cy + 1, z: cz, type: BLOCKS.AVIONICS_C_DH },
+        { x: cx - 1, y: cy, z: cz, type: BLOCKS.SOLAR_ARRAY },
+        { x: cx + 1, y: cy, z: cz, type: BLOCKS.SOLAR_ARRAY },
+        { x: cx, y: cy, z: cz + 1, type: BLOCKS.MULTISPECTRAL_CAM },
+        { x: cx, y: cy + 2, z: cz, type: BLOCKS.BATTERY_PACK },
       ];
       shroudTargets = [];
     }
@@ -745,17 +872,37 @@ export class SpacecraftSimulator {
   }
 
   public buildFlightReadyCraft(missionKey: string = this.activeMissionKey) {
-    this.world.clearSpacecraft();
     const { rocketTargets, satelliteTargets, shroudTargets } =
       this.getBlueprintTargets(missionKey);
 
-    rocketTargets.forEach((t) => this.world.setBlock(t.x, t.y, t.z, t.type));
-    satelliteTargets.forEach((t) => this.world.setBlock(t.x, t.y, t.z, t.type));
-    shroudTargets.forEach((t) => this.world.setBlock(t.x, t.y, t.z, t.type));
+    this.rocketCraftBlocks = [...rocketTargets, ...shroudTargets];
+    this.satelliteCraftBlocks = [...satelliteTargets];
+
+    this.world.clearSpacecraft();
+
+    if (this.devStage === "STAGE_1_ROCKET") {
+      this.rocketCraftBlocks.forEach((t) =>
+        this.world.setBlock(t.x, t.y, t.z, t.type)
+      );
+    } else {
+      this.satelliteCraftBlocks.forEach((t) =>
+        this.world.setBlock(t.x, t.y, t.z, t.type)
+      );
+    }
 
     this.callbacks.onNotification?.(
-      `Loaded 100% Certified Launch Stack for ${this.activeMission.name}!`
+      `Loaded Flight-Ready Craft for ${this.activeMission.name}!`
     );
+    this.triggerHUDUpdate();
+  }
+
+  public clearActiveStageCraft() {
+    this.world.clearSpacecraft();
+    if (this.devStage === "STAGE_1_ROCKET") {
+      this.rocketCraftBlocks = [];
+    } else {
+      this.satelliteCraftBlocks = [];
+    }
     this.triggerHUDUpdate();
   }
 
@@ -839,20 +986,34 @@ export class SpacecraftSimulator {
   public startLaunchSequence() {
     if (this.isLaunching || this.isCountdown) return;
 
-    // Strict flight certification gate - prevent launch with floating modules or missing fairing
+    // Sync active world blocks first
+    if (this.devStage === "STAGE_1_ROCKET") {
+      this.rocketCraftBlocks = this.world.getSpacecraftBlocks();
+    } else {
+      this.satelliteCraftBlocks = this.world.getSpacecraftBlocks();
+    }
+
+    // Flight certification gate - only require Stage 1 rocket aircraft launcher certification!
+    // One can launch without developing or entering Stage 2. Stage 2 violations do not block launch.
     const telem = this.computeTelemetry();
-    if (!telem.stage1Certified || telem.structuralIssues.length > 0) {
+    if (!telem.stage1Certified || (telem.structuralIssues && telem.structuralIssues.length > 0)) {
       const issueMsg =
-        telem.structuralIssues[0] ||
-        (telem.twr < 1.0
+        (telem.structuralIssues && telem.structuralIssues[0]) ||
+        (telem.isRocketOverBudget
+          ? "Stage 1 Aircraft budget ceiling breached!"
+          : telem.twr < 1.0
           ? "TWR < 1.0: Vehicle cannot overcome gravity."
-          : telem.isOverBudget
-          ? "Budget ceiling breached!"
-          : "Vehicle failed flight readiness certification!");
+          : !telem.hasPayloadContainer
+          ? "Rocket is missing a payload container block!"
+          : "Aircraft launcher failed flight readiness certification!");
       this.callbacks.onNotification?.(`[FLIGHT ABORT] ${issueMsg}`);
       soundEngine.playBreak();
       return;
     }
+
+    // Launch ONLY the rocket aircraft with payload container - DO NOT add or depict the stage 2 satellite blocks during launch animation!
+    this.world.clearSpacecraft();
+    this.rocketCraftBlocks.forEach((t) => this.world.setBlock(t.x, t.y, t.z, t.type));
 
     this.isCountdown = true;
     this.isStageSeparated = false;
@@ -956,16 +1117,18 @@ export class SpacecraftSimulator {
         if (this.isDestroyed) return;
         this.isLaunching = false;
 
-        // Reset spacecraft blocks back to resting pad coordinates
-        const craftBlocks = this.world.getSpacecraftBlocks();
-        craftBlocks.forEach((b) => {
-          const key = `${b.x},${b.y},${b.z}`;
-          const mesh = this.world.blockMeshMap.get(key);
-          if (mesh) {
-            mesh.position.set(b.x + 0.5, b.y + 0.5, b.z + 0.5);
-            mesh.rotation.set(0, 0, 0);
-          }
-        });
+        // Reset spacecraft blocks back to current active stage
+        this.world.clearSpacecraft();
+        if (this.devStage === "STAGE_1_ROCKET") {
+          this.rocketCraftBlocks.forEach((b) => {
+            this.world.setBlock(b.x, b.y, b.z, b.type);
+          });
+        } else {
+          this.satelliteCraftBlocks.forEach((b) => {
+            this.world.setBlock(b.x, b.y, b.z, b.type);
+          });
+        }
+        this.triggerHUDUpdate();
 
         this.callbacks.onLaunchFinish?.();
         this.callbacks.onNotification?.(
@@ -974,24 +1137,24 @@ export class SpacecraftSimulator {
 
         // Generate Systems Engineering Debrief Score
         const telem = this.computeTelemetry();
-        const maxBudget = this.activeMission.budget_m || 160;
-        const budgetPct = Math.max(0, Math.min(1, telem.budgetRemaining / maxBudget));
+        const maxBudget = telem.rocketBudgetM || 160;
+        const budgetPct = Math.max(0, Math.min(1, telem.rocketBudgetRemaining / maxBudget));
         const budgetScore = Math.round(budgetPct * 20);
 
-        const massScore = Math.max(12, Math.min(20, Math.round(20 - Math.max(0, (telem.totalMass - 3000) / 400))));
+        const massScore = Math.max(12, Math.min(20, Math.round(20 - Math.max(0, (telem.rocketMass - 3000) / 400))));
         const twrScore = telem.twr >= 1.2 && telem.twr <= 2.5 ? 20 : telem.twr >= 1.0 ? 16 : 5;
-        const powerScore = telem.netPower >= 50 ? 20 : telem.netPower >= 0 ? 17 : 8;
+        const powerScore = telem.stage2Certified ? 20 : 16;
         const scienceScore = telem.hasPayloadContainer ? 20 : 15;
 
         const totalScore = Math.min(100, budgetScore + massScore + twrScore + powerScore + scienceScore);
         const grade: "A+" | "A" | "B" | "C" | "FAIL" =
-          totalScore >= 92 ? "A+" : totalScore >= 82 ? "A" : totalScore >= 72 ? "B" : totalScore >= 60 ? "C" : "FAIL";
+          totalScore >= 90 ? "A+" : totalScore >= 80 ? "A" : totalScore >= 70 ? "B" : totalScore >= 60 ? "C" : "FAIL";
 
         const debrief: MissionDebriefScore = {
           totalScore,
           grade,
           verdict:
-            totalScore >= 80
+            totalScore >= 75
               ? "MISSION SUCCESS: FLIGHT OPERATIONS CERTIFIED (LEVEL 3 POINT DESIGN)"
               : "SUB-OPTIMAL DESIGN: BUDGET OR PROPULSION MARGINS NARROW",
           breakdown: {
@@ -1006,8 +1169,8 @@ export class SpacecraftSimulator {
             maxVelKmh: Math.round(Math.min(7800, this.launchAscentY * 9.5 + this.launchTimeSec * 110) * 3.6),
             maxG: (1.0 + Math.min(3.5, this.launchTimeSec * 0.3)).toFixed(1) + " G",
             flightDurationSec: 15,
-            costSpentM: telem.totalCostM,
-            massKg: telem.totalMass,
+            costSpentM: telem.rocketCostM,
+            massKg: telem.rocketMass,
             twr: telem.twr,
           },
         };

@@ -30,20 +30,35 @@ import { GameInitLoading } from "./GameInitLoading";
 import { ProjectStoryIntro } from "./ProjectStoryIntro";
 import { MinecraftMainMenu } from "./MinecraftMainMenu";
 import { MissionLaunchBriefingHud } from "./MissionLaunchBriefingHud";
+import { OrbitalMissionSimulator } from "./OrbitalMissionSimulator";
 
 export type ScreenPhase =
   | "INIT_LOADING"
   | "PROJECT_STORY"
   | "MAIN_MENU"
   | "LAUNCH_BRIEFING"
-  | "PLAYING";
+  | "PLAYING"
+  | "ORBIT_SIMULATION";
 
 const INITIAL_TELEMETRY: TelemetryData = {
   blocksCount: 0,
+  rocketBlocksCount: 0,
+  satelliteBlocksCount: 0,
   totalCostM: 0,
-  budgetRemaining: 160,
+  totalBudgetM: 350,
+  budgetRemaining: 350,
   isOverBudget: false,
   overBudgetAmount: 0,
+  rocketCostM: 0,
+  rocketBudgetM: 150,
+  rocketBudgetRemaining: 150,
+  isRocketOverBudget: false,
+  rocketMass: 0,
+  satelliteCostM: 0,
+  satelliteBudgetM: 200,
+  satelliteBudgetRemaining: 200,
+  isSatelliteOverBudget: false,
+  satelliteMass: 0,
   totalMass: 0,
   powerGen: 0,
   powerDraw: 0,
@@ -206,7 +221,7 @@ export function MinecraftGame() {
       onLaunchComplete: (debrief) => {
         document.exitPointerLock?.();
         setDebriefScore(debrief);
-        setShowDebrief(true);
+        setScreenPhase("ORBIT_SIMULATION");
       },
       onLaunchFinish: () => {
         setLaunchTelem((prev) => ({ ...prev, isVisible: false }));
@@ -260,6 +275,11 @@ export function MinecraftGame() {
           return;
         }
 
+        if (screenPhase === "ORBIT_SIMULATION") {
+          setScreenPhase("PLAYING");
+          return;
+        }
+
         if (screenPhase === "PLAYING") {
           setIsPaused((prev) => {
             const next = !prev;
@@ -299,6 +319,13 @@ export function MinecraftGame() {
         e.preventDefault();
         document.exitPointerLock?.();
         setShowLaunchReview(true);
+        return;
+      }
+
+      if (e.code === "KeyO") {
+        e.preventDefault();
+        document.exitPointerLock?.();
+        setScreenPhase("ORBIT_SIMULATION");
         return;
       }
     };
@@ -415,9 +442,12 @@ export function MinecraftGame() {
   };
 
   const handleClearCraft = () => {
-    simRef.current?.world.clearSpacecraft();
-    simRef.current?.triggerHUDUpdate();
-    showNotification("Spacecraft assembly bay cleared.");
+    simRef.current?.clearActiveStageCraft();
+    showNotification(
+      devStage === "STAGE_1_ROCKET"
+        ? "Aircraft launcher assembly bay cleared."
+        : "Mission satellite assembly bay cleared."
+    );
   };
 
   const handleEquipComponent = (blockType: number) => {
@@ -464,6 +494,7 @@ export function MinecraftGame() {
           onSelectMission={handleSelectMission}
           onCycleTime={handleCycleTime}
           onReplayStory={() => setScreenPhase("PROJECT_STORY")}
+          onViewOrbitalTrajectory={() => setScreenPhase("ORBIT_SIMULATION")}
         />
       )}
 
@@ -526,6 +557,10 @@ export function MinecraftGame() {
             }}
             onToggleFlight={handleToggleFlight}
             onClearCraft={handleClearCraft}
+            onOpenOrbitSim={() => {
+              document.exitPointerLock?.();
+              setScreenPhase("ORBIT_SIMULATION");
+            }}
           />
 
           {/* Component Hover Tooltip */}
@@ -565,6 +600,24 @@ export function MinecraftGame() {
             }}
           />
         </>
+      )}
+
+      {/* 6. 3D INTERACTIVE ORBITAL TRAJECTORY SIMULATION (AFTER LAUNCH OR VIA O) */}
+      {screenPhase === "ORBIT_SIMULATION" && (
+        <OrbitalMissionSimulator
+          missionKey={activeMissionKey}
+          mission={activeMission}
+          debriefScore={debriefScore}
+          onReturnToLaunchPad={() => {
+            setScreenPhase("PLAYING");
+            try {
+              canvasRef.current?.requestPointerLock?.();
+            } catch {}
+          }}
+          onViewDebrief={() => {
+            setShowDebrief(true);
+          }}
+        />
       )}
 
       {/* Global Notification Toast */}
