@@ -121,7 +121,7 @@ export interface TelemetryData {
   devStage: DevStage;
 }
 
-export type TimeOfDay = "DAY" | "SUNSET" | "NIGHT" | "SUNRISE";
+export type TimeOfDay = "DAY" | "NIGHT";
 
 export interface RaycastHit {
   block: { x: number; y: number; z: number; type: number };

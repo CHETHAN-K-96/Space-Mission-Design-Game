@@ -26,6 +26,17 @@ import { ResourcesModal } from "./ResourcesModal";
 import { MissionStoryIntroModal } from "./MissionStoryIntroModal";
 import { MissionDebriefModal } from "./MissionDebriefModal";
 import { MissionDebriefScore } from "../../engine/minecraft/types";
+import { GameInitLoading } from "./GameInitLoading";
+import { ProjectStoryIntro } from "./ProjectStoryIntro";
+import { MinecraftMainMenu } from "./MinecraftMainMenu";
+import { MissionLaunchBriefingHud } from "./MissionLaunchBriefingHud";
+
+export type ScreenPhase =
+  | "INIT_LOADING"
+  | "PROJECT_STORY"
+  | "MAIN_MENU"
+  | "LAUNCH_BRIEFING"
+  | "PLAYING";
 
 const INITIAL_TELEMETRY: TelemetryData = {
   blocksCount: 0,
@@ -54,6 +65,9 @@ const INITIAL_TELEMETRY: TelemetryData = {
 export function MinecraftGame() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const simRef = useRef<SpacecraftSimulator | null>(null);
+
+  // Screen Phase state for gaming flow
+  const [screenPhase, setScreenPhase] = useState<ScreenPhase>("INIT_LOADING");
 
   // Game UI State
   const [telemetry, setTelemetry] = useState<TelemetryData>(INITIAL_TELEMETRY);
@@ -185,7 +199,7 @@ export function MinecraftGame() {
         });
         setLaunchFlightSec((prev) => prev + 0.1);
       },
-      onLaunchComplete: (debrief, m) => {
+      onLaunchComplete: (debrief) => {
         document.exitPointerLock?.();
         setDebriefScore(debrief);
         setShowDebrief(true);
@@ -230,7 +244,19 @@ export function MinecraftGame() {
           setShowDebrief(false);
           return;
         }
-        if (gameStarted) {
+
+        if (screenPhase === "LAUNCH_BRIEFING") {
+          // ESC skips briefing and enters game
+          handleBriefingComplete();
+          return;
+        }
+
+        if (screenPhase === "PROJECT_STORY") {
+          setScreenPhase("MAIN_MENU");
+          return;
+        }
+
+        if (screenPhase === "PLAYING") {
           setIsPaused((prev) => {
             const next = !prev;
             if (next) {
@@ -238,13 +264,16 @@ export function MinecraftGame() {
             } else {
               try {
                 canvasRef.current?.requestPointerLock?.();
-              } catch { }
+              } catch {}
             }
             return next;
           });
         }
         return;
       }
+
+      // In-Game hotkeys only
+      if (screenPhase !== "PLAYING") return;
 
       if (e.code === "KeyE") {
         e.preventDefault();
@@ -255,7 +284,7 @@ export function MinecraftGame() {
           } else {
             try {
               canvasRef.current?.requestPointerLock?.();
-            } catch { }
+            } catch {}
           }
           return next;
         });
@@ -272,10 +301,16 @@ export function MinecraftGame() {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isAnyModalOpen, gameStarted]);
+  }, [isAnyModalOpen, screenPhase]);
 
-  // Enter game from initial overlay or resume
-  const handleEnterGame = () => {
+  // Transition from Main Menu to Mission Launch Briefing
+  const handleStartFromMenu = () => {
+    setScreenPhase("LAUNCH_BRIEFING");
+  };
+
+  // Transition from Mission Launch Briefing into live 3D game
+  const handleBriefingComplete = () => {
+    setScreenPhase("PLAYING");
     setGameStarted(true);
     setIsPaused(false);
     try {
@@ -283,21 +318,25 @@ export function MinecraftGame() {
     } catch {
       // ignore
     }
-    showNotification("Entered Launch Complex! Click canvas to lock mouse, ESC for Pause Menu.");
+    showNotification(
+      "Entered Launch Complex! Click canvas to lock mouse, ESC for Pause Menu."
+    );
   };
 
-  const handleLoadCertifiedCraft = () => {
-    setGameStarted(true);
-    setIsPaused(false);
-    simRef.current?.buildFlightReadyCraft(activeMissionKey);
-    try {
-      canvasRef.current?.requestPointerLock?.();
-    } catch {
-      // ignore
+  const handleSelectMission = (missionKey: string) => {
+    setActiveMissionKey(missionKey);
+    if (missionKey === "sandbox_mode") {
+      document.exitPointerLock?.();
+      setShowSandbox(true);
+    } else {
+      const m = MISSIONS[missionKey];
+      setActiveMission(m);
+      simRef.current?.setMission(missionKey);
+      showNotification(`Mission Selected: ${m.name}`);
     }
   };
 
-  const handleMissionChange = (missionKey: string) => {
+  const handleMissionChangeInGame = (missionKey: string) => {
     setActiveMissionKey(missionKey);
     if (missionKey === "sandbox_mode") {
       document.exitPointerLock?.();
@@ -307,7 +346,7 @@ export function MinecraftGame() {
       setActiveMission(m);
       simRef.current?.setMission(missionKey);
       document.exitPointerLock?.();
-      setShowStoryIntro(true);
+      setScreenPhase("LAUNCH_BRIEFING");
       showNotification(`Switched Mission: ${m.name}`);
     }
   };
@@ -388,75 +427,149 @@ export function MinecraftGame() {
     showNotification("Custom Sandbox Constraints Applied!");
   };
 
-  // Show pause overlay ONLY before game start OR when explicitly paused
-  const showPauseOverlay = (!gameStarted || isPaused) && !isAnyModalOpen;
-
   return (
     <div className="relative w-screen h-screen overflow-hidden select-none bg-[#020617] font-mono">
-      {/* Three.js WebGL Canvas */}
+      {/* Three.js WebGL Canvas (always alive in background) */}
       <canvas
         ref={canvasRef}
         id="webgl-canvas"
         className="absolute inset-0 w-full h-full block z-[1]"
       />
 
-      {/* Crosshair */}
-      <Crosshair />
+      {/* 1. INITIAL MINECRAFT INITIALIZATION SCREEN */}
+      {screenPhase === "INIT_LOADING" && (
+        <GameInitLoading
+          onComplete={() => setScreenPhase("PROJECT_STORY")}
+        />
+      )}
 
-      {/* Sleek 3D World Block Inspection HUD */}
-      <WorldBlockHoverHud
-        blockType={hoveredWorldBlock?.blockType ?? null}
-        worldPos={hoveredWorldBlock?.worldPos}
-      />
+      {/* 2. TUTORIAL / STORY TIME SENTENCE-WISE INTRO */}
+      {screenPhase === "PROJECT_STORY" && (
+        <ProjectStoryIntro
+          onComplete={() => setScreenPhase("MAIN_MENU")}
+        />
+      )}
 
-      {/* Top Telemetry Cockpit HUD */}
-      <CockpitHud
-        telemetry={telemetry}
-        activeMissionKey={activeMissionKey}
-        activeMission={activeMission}
-        timeOfDay={timeOfDay}
-        isFlying={isFlying}
-        blueprintVisible={blueprintVisible}
-        blueprintMode={blueprintMode}
-        fairingCutaway={fairingCutaway}
-        devStage={devStage}
-        onMissionChange={handleMissionChange}
-        onAutoBuild={handleAutoBuild}
-        onEncloseFairing={handleEncloseFairing}
-        onToggleBlueprint={handleToggleBlueprint}
-        onToggleBlueprintMode={handleToggleBlueprintMode}
-        onToggleCutaway={handleToggleCutaway}
-        onToggleDevStage={handleToggleDevStage}
-        onLaunchReview={handleLaunchReview}
-        onCycleTime={handleCycleTime}
-        onOpenDossier={() => {
-          document.exitPointerLock?.();
-          setShowDossier(true);
-        }}
-        onOpenTeam={() => {
-          document.exitPointerLock?.();
-          setShowTeam(true);
-        }}
-        onOpenResources={() => {
-          document.exitPointerLock?.();
-          setShowResources(true);
-        }}
-        onOpenStory={() => {
-          document.exitPointerLock?.();
-          setShowStoryIntro(true);
-        }}
-        onToggleFlight={handleToggleFlight}
-        onClearCraft={handleClearCraft}
-      />
+      {/* 3. REDESIGNED MINECRAFT HOME PAGE */}
+      {screenPhase === "MAIN_MENU" && (
+        <MinecraftMainMenu
+          activeMissionKey={activeMissionKey}
+          activeMission={activeMission}
+          timeOfDay={timeOfDay}
+          onEnterLaunchComplex={handleStartFromMenu}
+          onSelectMission={handleSelectMission}
+          onCycleTime={handleCycleTime}
+          onReplayStory={() => setScreenPhase("PROJECT_STORY")}
+        />
+      )}
 
-      {/* Notification Toast */}
+      {/* 4. SENTENCE-WISE MISSION BRIEFING ON ENTERING LAUNCH COMPLEX */}
+      {screenPhase === "LAUNCH_BRIEFING" && (
+        <MissionLaunchBriefingHud
+          missionKey={activeMissionKey}
+          mission={activeMission}
+          onComplete={handleBriefingComplete}
+        />
+      )}
+
+      {/* 5. IN-GAME ACTIVE HUD & OVERLAYS (ONLY ACTIVE WHEN PLAYING) */}
+      {screenPhase === "PLAYING" && (
+        <>
+          {/* Crosshair */}
+          <Crosshair />
+
+          {/* 3D World Block Inspection HUD */}
+          <WorldBlockHoverHud
+            blockType={hoveredWorldBlock?.blockType ?? null}
+            worldPos={hoveredWorldBlock?.worldPos}
+          />
+
+          {/* Top Telemetry Cockpit HUD */}
+          <CockpitHud
+            telemetry={telemetry}
+            activeMissionKey={activeMissionKey}
+            activeMission={activeMission}
+            timeOfDay={timeOfDay}
+            isFlying={isFlying}
+            blueprintVisible={blueprintVisible}
+            blueprintMode={blueprintMode}
+            fairingCutaway={fairingCutaway}
+            devStage={devStage}
+            onMissionChange={handleMissionChangeInGame}
+            onAutoBuild={handleAutoBuild}
+            onEncloseFairing={handleEncloseFairing}
+            onToggleBlueprint={handleToggleBlueprint}
+            onToggleBlueprintMode={handleToggleBlueprintMode}
+            onToggleCutaway={handleToggleCutaway}
+            onToggleDevStage={handleToggleDevStage}
+            onLaunchReview={handleLaunchReview}
+            onCycleTime={handleCycleTime}
+            onOpenDossier={() => {
+              document.exitPointerLock?.();
+              setShowDossier(true);
+            }}
+            onOpenTeam={() => {
+              document.exitPointerLock?.();
+              setShowTeam(true);
+            }}
+            onOpenResources={() => {
+              document.exitPointerLock?.();
+              setShowResources(true);
+            }}
+            onOpenStory={() => {
+              document.exitPointerLock?.();
+              setScreenPhase("LAUNCH_BRIEFING");
+            }}
+            onToggleFlight={handleToggleFlight}
+            onClearCraft={handleClearCraft}
+          />
+
+          {/* Component Hover Tooltip */}
+          <ComponentTooltip blockType={hoveredBlockType} />
+
+          {/* Bottom 9-Slot Hotbar */}
+          <Hotbar
+            hotbarSlots={hotbarSlots}
+            activeSlotIdx={activeSlotIdx}
+            onSelectSlot={(idx) => simRef.current?.setActiveSlot(idx)}
+            onHoverSlot={(type) => setHoveredBlockType(type)}
+          />
+
+          {/* In-game Pause Overlay (Triggered by ESC while playing) */}
+          <PauseOverlay
+            isVisible={isPaused && !isAnyModalOpen}
+            timeOfDay={timeOfDay}
+            activeMissionName={activeMission.name}
+            onResumeGame={() => {
+              setIsPaused(false);
+              try {
+                canvasRef.current?.requestPointerLock?.();
+              } catch {}
+            }}
+            onOpenBriefing={() => {
+              setIsPaused(false);
+              setScreenPhase("LAUNCH_BRIEFING");
+            }}
+            onSwitchMission={() => {
+              setIsPaused(false);
+              setScreenPhase("MAIN_MENU");
+            }}
+            onCycleTime={handleCycleTime}
+            onReturnToMainMenu={() => {
+              setIsPaused(false);
+              setScreenPhase("MAIN_MENU");
+            }}
+          />
+        </>
+      )}
+
+      {/* Global Notification Toast */}
       <NotificationToast message={toastMessage} />
 
       {/* Cinematic 3-2-1 Launch Countdown Overlay */}
       {countdown !== null && (
         <div className="fixed inset-0 z-50 pointer-events-none flex flex-col items-center justify-center bg-slate-950/40 backdrop-blur-[2px] transition-all">
           <div className="relative flex flex-col items-center">
-            {/* Outer animated telemetry ring */}
             <div className="w-56 h-56 rounded-full border-4 border-sky-500/30 border-t-emerald-400 animate-spin" />
             <div className="absolute inset-0 flex flex-col items-center justify-center">
               <span className="text-[11px] font-bold text-sky-400 tracking-widest uppercase mb-1">
@@ -484,30 +597,6 @@ export function MinecraftGame() {
         altKm={launchTelem.altKm}
         velKmh={launchTelem.velKmh}
         mach={launchTelem.mach}
-      />
-
-      {/* Component Hover Tooltip */}
-      <ComponentTooltip blockType={hoveredBlockType} />
-
-      {/* Bottom 9-Slot Hotbar */}
-      <Hotbar
-        hotbarSlots={hotbarSlots}
-        activeSlotIdx={activeSlotIdx}
-        onSelectSlot={(idx) => simRef.current?.setActiveSlot(idx)}
-        onHoverSlot={(type) => setHoveredBlockType(type)}
-      />
-
-      {/* Pause / Enter Overlay */}
-      <PauseOverlay
-        isVisible={showPauseOverlay}
-        timeOfDay={timeOfDay}
-        onEnterGame={handleEnterGame}
-        onLoadCertifiedCraft={handleLoadCertifiedCraft}
-        onCycleTime={handleCycleTime}
-        onOpenStory={() => {
-          document.exitPointerLock?.();
-          setShowStoryIntro(true);
-        }}
       />
 
       {/* Modals */}

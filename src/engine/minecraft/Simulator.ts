@@ -196,35 +196,21 @@ export class SpacecraftSimulator {
       this.sunLight.intensity = 0.95;
       this.sunLight.color.set(0xfffbe8);
       this.sunLight.position.set(40, 80, 30);
-    } else if (mode === "SUNSET") {
-      this.scene.background = new THREE.Color(0xc2410c);
-      this.scene.fog = new THREE.FogExp2(0x9a3412, 0.012);
-      this.ambientLight.intensity = 0.45;
-      this.sunLight.intensity = 0.8;
-      this.sunLight.color.set(0xf97316);
-      this.sunLight.position.set(80, 15, 30);
-    } else if (mode === "NIGHT") {
+    } else {
+      // NIGHT
       this.scene.background = new THREE.Color(0x020617);
       this.scene.fog = new THREE.FogExp2(0x020617, 0.015);
       this.ambientLight.intensity = 0.2;
       this.sunLight.intensity = 0.25;
       this.sunLight.color.set(0x38bdf8);
       this.sunLight.position.set(-20, 60, -40);
-    } else if (mode === "SUNRISE") {
-      this.scene.background = new THREE.Color(0xf472b6);
-      this.scene.fog = new THREE.FogExp2(0xfb7185, 0.012);
-      this.ambientLight.intensity = 0.5;
-      this.sunLight.intensity = 0.7;
-      this.sunLight.color.set(0xfde047);
-      this.sunLight.position.set(-70, 18, 30);
     }
   }
 
   public cycleTimeOfDay() {
-    const modes: TimeOfDay[] = ["DAY", "SUNSET", "NIGHT", "SUNRISE"];
-    const nextIdx = (modes.indexOf(this.timeOfDayMode) + 1) % modes.length;
-    this.setTimeOfDay(modes[nextIdx]);
-    this.callbacks.onNotification?.(`Time of Day set to ${modes[nextIdx]}`);
+    const nextMode: TimeOfDay = this.timeOfDayMode === "DAY" ? "NIGHT" : "DAY";
+    this.setTimeOfDay(nextMode);
+    this.callbacks.onNotification?.(`Environment Lighting: ${nextMode}`);
   }
 
   public setMission(missionKey: string, customMission?: MissionDef) {

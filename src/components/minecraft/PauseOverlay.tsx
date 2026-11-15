@@ -2,112 +2,142 @@
 
 import React from "react";
 import Link from "next/link";
+import { soundEngine } from "../../engine/minecraft/SoundEngine";
 import { TimeOfDay } from "../../engine/minecraft/types";
-import { Play, Sparkles, Box, Sun, Moon, BookOpen } from "lucide-react";
+import {
+  Play,
+  Box,
+  Sun,
+  Moon,
+  BookOpen,
+  Compass,
+  Home,
+} from "lucide-react";
 
 interface PauseOverlayProps {
   isVisible: boolean;
   timeOfDay: TimeOfDay;
-  onEnterGame: () => void;
-  onLoadCertifiedCraft: () => void;
+  activeMissionName: string;
+  onResumeGame: () => void;
+  onOpenBriefing: () => void;
+  onSwitchMission: () => void;
   onCycleTime: () => void;
-  onOpenStory?: () => void;
+  onReturnToMainMenu: () => void;
 }
 
 export function PauseOverlay({
   isVisible,
   timeOfDay,
-  onEnterGame,
-  onLoadCertifiedCraft,
+  activeMissionName,
+  onResumeGame,
+  onOpenBriefing,
+  onSwitchMission,
   onCycleTime,
-  onOpenStory,
+  onReturnToMainMenu,
 }: PauseOverlayProps) {
   if (!isVisible) return null;
 
+  const handleAction = (cb: () => void) => {
+    try {
+      soundEngine.playUiClick();
+    } catch {}
+    cb();
+  };
+
   return (
-    <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4 font-mono">
-      <div className="bg-slate-900 border-2 border-sky-600 shadow-[0_0_40px_rgba(2,132,199,0.4)] rounded-lg p-6 w-[520px] max-w-[95vw] flex flex-col gap-4 text-center">
+    <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-md flex items-center justify-center p-4 font-mono select-none">
+      <div className="bg-[#1e293b] border-2 border-sky-500 shadow-[0_0_40px_rgba(2,132,199,0.4)] rounded-lg p-6 w-[480px] max-w-[95vw] flex flex-col gap-4 text-center">
         {/* Title Group */}
-        <div className="flex flex-col items-center gap-1.5">
-          <span className="bg-red-600 text-white font-extrabold text-[10px] px-2 py-0.5 rounded tracking-widest">
-            NASA SPACE APPS CHALLENGE 2026
+        <div className="flex flex-col items-center gap-1">
+          <span className="font-pixel text-lg sm:text-xl text-slate-100 tracking-wider">
+            GAME PAUSED
           </span>
-          <h1 className="text-xl sm:text-2xl font-black text-sky-400 tracking-wide mt-1">
-            SPACE MISSION DESIGN GAME
-          </h1>
-          <p className="text-xs text-slate-400">
-            3D Systems Engineering VAB & Flight Readiness Simulator
+          <p className="text-xs text-sky-400 font-mono">
+            Active Mission: {activeMissionName}
           </p>
         </div>
 
-        {/* Buttons Group */}
-        <div className="flex flex-col gap-2">
+        {/* Minecraft Style Buttons Group */}
+        <div className="flex flex-col gap-2.5">
+          {/* Button 1: BACK TO GAME */}
           <button
-            onClick={onEnterGame}
-            className="bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-teal-500 hover:to-emerald-400 text-white font-bold text-sm py-3 px-4 border border-emerald-400 rounded-md shadow-lg shadow-emerald-600/40 transition-all hover:scale-105 flex items-center justify-center gap-2"
+            onClick={() => handleAction(onResumeGame)}
+            className="w-full bg-[#4a5568] hover:bg-[#2b6cb0] active:translate-y-0.5 text-white py-3 px-4 border-t-[3px] border-l-[3px] border-white/60 border-b-[4px] border-r-[4px] border-black/80 shadow flex items-center justify-center gap-2 font-pixel text-xs hover:text-yellow-300 transition-colors"
           >
-            <Play className="w-4 h-4" /> ENTER LAUNCH COMPLEX (LOCK MOUSE)
+            <Play className="w-4 h-4 text-emerald-400" />
+            <span>BACK TO GAME</span>
           </button>
-          {onOpenStory && (
-            <button
-              onClick={onOpenStory}
-              className="bg-indigo-950/70 hover:bg-indigo-900/80 text-indigo-200 border border-indigo-700/60 py-2 px-3 rounded-md text-xs font-semibold transition-all hover:border-indigo-400 flex items-center justify-center gap-1.5"
-            >
-              <BookOpen className="w-3.5 h-3.5 text-indigo-400" /> MISSION STORYLINE & HISTORICAL FLIGHT
-            </button>
-          )}
+
+          {/* Button 2: MISSION BRIEFING & OBJECTIVES */}
           <button
-            onClick={onLoadCertifiedCraft}
-            className="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 py-2 px-3 rounded-md text-xs font-semibold transition-all hover:border-sky-400 flex items-center justify-center gap-1.5"
+            onClick={() => handleAction(onOpenBriefing)}
+            className="w-full bg-[#374151] hover:bg-[#4b5563] active:translate-y-0.5 text-slate-200 py-2.5 px-4 border-t-2 border-l-2 border-white/40 border-b-[3px] border-r-[3px] border-black/70 shadow flex items-center justify-center gap-2 text-xs font-semibold hover:text-sky-300 transition-colors"
           >
-            <Sparkles className="w-3.5 h-3.5 text-sky-400" /> LOAD CERTIFIED SPACECRAFT
+            <BookOpen className="w-4 h-4 text-sky-400" />
+            <span>MISSION DIRECTIVE & BRIEFING</span>
           </button>
+
+          {/* Button 3: SWITCH MISSION */}
           <button
-            onClick={onCycleTime}
-            className="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 py-2 px-3 rounded-md text-xs font-semibold transition-all hover:border-sky-400 flex items-center justify-center gap-1.5"
+            onClick={() => handleAction(onSwitchMission)}
+            className="w-full bg-[#374151] hover:bg-[#4b5563] active:translate-y-0.5 text-slate-200 py-2.5 px-4 border-t-2 border-l-2 border-white/40 border-b-[3px] border-r-[3px] border-black/70 shadow flex items-center justify-center gap-2 text-xs font-semibold hover:text-sky-300 transition-colors"
+          >
+            <Compass className="w-4 h-4 text-emerald-400" />
+            <span>SWITCH MISSION</span>
+          </button>
+
+          {/* Button 4: TIME OF DAY TOGGLE */}
+          <button
+            onClick={() => handleAction(onCycleTime)}
+            className="w-full bg-[#374151] hover:bg-[#4b5563] active:translate-y-0.5 text-slate-200 py-2.5 px-4 border-t-2 border-l-2 border-white/40 border-b-[3px] border-r-[3px] border-black/70 shadow flex items-center justify-center gap-2 text-xs font-semibold hover:text-amber-300 transition-colors"
           >
             {timeOfDay === "NIGHT" ? (
-              <Moon className="w-3.5 h-3.5 text-amber-400" />
+              <Moon className="w-4 h-4 text-amber-300" />
             ) : (
-              <Sun className="w-3.5 h-3.5 text-amber-400" />
+              <Sun className="w-4 h-4 text-amber-400" />
             )}
-            TIME OF DAY: {timeOfDay}
+            <span>TIME OF DAY: {timeOfDay}</span>
           </button>
-          <div className="grid grid-cols-1 gap-2 mt-1">
-            <Link
-              href="/showcase"
-              className="bg-slate-800 hover:bg-slate-700 text-purple-400 border border-slate-700 py-2.5 px-3 rounded-md text-xs font-semibold transition-all hover:border-purple-400 text-center flex items-center justify-center gap-2"
-            >
-              <Box className="w-4 h-4 text-purple-400" /> BROWSE ALL 3D AEROSPACE VOXEL MODELS
-            </Link>
-          </div>
+
+          {/* Button 5: BROWSE 3D ELEMENTS */}
+          <Link
+            href="/showcase"
+            onClick={() => {
+              try {
+                soundEngine.playUiClick();
+              } catch {}
+            }}
+            className="w-full bg-[#374151] hover:bg-[#4b5563] active:translate-y-0.5 text-purple-300 hover:text-yellow-300 py-2.5 px-4 border-t-2 border-l-2 border-white/40 border-b-[3px] border-r-[3px] border-black/70 shadow flex items-center justify-center gap-2 text-xs font-semibold transition-colors"
+          >
+            <Box className="w-4 h-4 text-purple-400" />
+            <span>BROWSE ALL 3D AEROSPACE MODELS</span>
+          </Link>
+
+          {/* Button 6: RETURN TO MAIN MENU */}
+          <button
+            onClick={() => handleAction(onReturnToMainMenu)}
+            className="w-full bg-[#27272a] hover:bg-[#3f3f46] active:translate-y-0.5 text-slate-300 hover:text-white py-2.5 px-4 border-t-2 border-l-2 border-white/30 border-b-[3px] border-r-[3px] border-black/70 shadow flex items-center justify-center gap-2 text-xs font-semibold transition-colors mt-1"
+          >
+            <Home className="w-4 h-4 text-slate-400" />
+            <span>QUIT TO TITLE SCREEN</span>
+          </button>
         </div>
 
-        {/* Instructions / Keybinds */}
-        <div className="bg-slate-950 border border-slate-800 rounded-md p-3 text-[11px] leading-relaxed text-slate-300 text-left flex flex-col gap-1">
+        {/* Quick Cheatsheet / Instructions */}
+        <div className="bg-slate-950/80 border border-slate-800 rounded p-3 text-[11px] leading-relaxed text-slate-400 text-left flex flex-col gap-1">
           <div>
-            <span className="text-sky-400 font-bold">MOUSE:</span> Look around (Pointer Lock)
+            <span className="text-sky-400 font-bold">CLICK CANVAS:</span> Re-lock mouse cursor
           </div>
           <div>
-            <span className="text-sky-400 font-bold">RIGHT-CLICK:</span> Place Selected Component |{" "}
-            <span className="text-sky-400 font-bold">LEFT-CLICK:</span> Disassemble
+            <span className="text-sky-400 font-bold">WASD + SPACE/SHIFT:</span> Fly around spaceport
           </div>
           <div>
-            <span className="text-sky-400 font-bold">WASD:</span> Fly Around Spaceport |{" "}
-            <span className="text-sky-400 font-bold">SPACE/SHIFT:</span> Ascend/Descend
+            <span className="text-sky-400 font-bold">RIGHT-CLICK:</span> Place block |{" "}
+            <span className="text-sky-400 font-bold">LEFT-CLICK:</span> Break block
           </div>
           <div>
-            <span className="text-sky-400 font-bold">1-9 / SCROLL:</span> Select Component |{" "}
-            <span className="text-sky-400 font-bold">E:</span> Component Catalog
-          </div>
-          <div>
-            <span className="text-sky-400 font-bold">X:</span> Toggle Fairing Shroud (Cutaway / Solid) |{" "}
-            <span className="text-sky-400 font-bold">V:</span> Satellite / Rocket View |{" "}
-            <span className="text-sky-400 font-bold">B:</span> Blueprint Guide
-          </div>
-          <div>
-            <span className="text-sky-400 font-bold">L:</span> Launch Spacecraft Review |{" "}
-            <span className="text-sky-400 font-bold">ESC:</span> Pause Menu
+            <span className="text-sky-400 font-bold">E:</span> Component catalog |{" "}
+            <span className="text-sky-400 font-bold">L:</span> Launch countdown
           </div>
         </div>
       </div>
