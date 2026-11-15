@@ -472,7 +472,6 @@ export class SpacecraftSimulator {
         { x: cx, y: cy + 7, z: cz, type: BLOCKS.UPPER_STAGE_TANK },
         { x: cx, y: cy + 8, z: cz, type: BLOCKS.SAT_PAYLOAD_CONTAINER },
         { x: cx, y: cy + 9, z: cz, type: BLOCKS.PAYLOAD_FAIRING },
-        { x: cx, y: cy + 10, z: cz, type: BLOCKS.PAYLOAD_FAIRING },
 
         // Left Solid Rocket Booster (EAP) - Half the size of the rocket (6 blocks tall!)
         { x: cx - 1, y: cy, z: cz, type: BLOCKS.SOLID_BOOSTER },
@@ -509,7 +508,6 @@ export class SpacecraftSimulator {
         { x: cx, y: cy + 7, z: cz, type: BLOCKS.UPPER_STAGE_TANK },
         { x: cx, y: cy + 8, z: cz, type: BLOCKS.SAT_PAYLOAD_CONTAINER },
         { x: cx, y: cy + 9, z: cz, type: BLOCKS.PAYLOAD_FAIRING },
-        { x: cx, y: cy + 10, z: cz, type: BLOCKS.PAYLOAD_FAIRING },
 
         // Left Falcon Heavy Side Booster (Full 1st stage core)
         { x: cx - 1, y: cy, z: cz, type: BLOCKS.SOLID_BOOSTER },
@@ -547,7 +545,6 @@ export class SpacecraftSimulator {
         { x: cx, y: cy + 8, z: cz, type: BLOCKS.UPPER_STAGE_TANK },
         { x: cx, y: cy + 9, z: cz, type: BLOCKS.SAT_PAYLOAD_CONTAINER },
         { x: cx, y: cy + 10, z: cz, type: BLOCKS.PAYLOAD_FAIRING },
-        { x: cx, y: cy + 11, z: cz, type: BLOCKS.PAYLOAD_FAIRING },
 
         // Left 5-Segment Solid Rocket Booster (7 blocks tall!)
         { x: cx - 1, y: cy, z: cz, type: BLOCKS.SOLID_BOOSTER },
