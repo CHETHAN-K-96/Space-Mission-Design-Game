@@ -34,7 +34,7 @@ export function ProjectStoryIntro({ onComplete }: ProjectStoryIntroProps) {
   const handleNext = () => {
     try {
       soundEngine.playUiClick();
-    } catch {}
+    } catch { }
     if (currentIdx < STORY_SENTENCES.length - 1) {
       setCurrentIdx((prev) => prev + 1);
     } else {
@@ -45,7 +45,7 @@ export function ProjectStoryIntro({ onComplete }: ProjectStoryIntroProps) {
   const handlePrev = () => {
     try {
       soundEngine.playUiClick();
-    } catch {}
+    } catch { }
     if (currentIdx > 0) {
       setCurrentIdx((prev) => prev - 1);
     }
@@ -54,7 +54,7 @@ export function ProjectStoryIntro({ onComplete }: ProjectStoryIntroProps) {
   const handleSkip = () => {
     try {
       soundEngine.playUiClick();
-    } catch {}
+    } catch { }
     onComplete();
   };
 
@@ -88,13 +88,7 @@ export function ProjectStoryIntro({ onComplete }: ProjectStoryIntroProps) {
       />
 
       {/* Top Banner Holo-Badge */}
-      <div className="absolute top-5 left-1/2 -translate-x-1/2 flex items-center gap-2.5 bg-slate-900/90 border border-sky-500/40 px-5 py-1.5 rounded-full text-xs text-sky-300 shadow-[0_0_25px_rgba(56,189,248,0.3)] backdrop-blur-md">
-        <div className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-        <Radio className="w-4 h-4 text-sky-400 animate-pulse" />
-        <span className="font-bold tracking-widest uppercase text-[11px] text-transparent bg-clip-text bg-gradient-to-r from-sky-300 via-indigo-200 to-sky-400">
-          DEEP SPACE NETWORK • INCOMING TRANSMISSION
-        </span>
-      </div>
+
 
       {/* ========================================================================= */}
       {/* TACTICAL SCI-FI FLIGHT TERMINAL CHASSIS                                 */}
@@ -120,7 +114,7 @@ export function ProjectStoryIntro({ onComplete }: ProjectStoryIntroProps) {
             <div className="flex items-center gap-3">
               {/* Pulsing Transmitter Beacon */}
               <div className="relative w-9 h-9 rounded-xl bg-gradient-to-br from-sky-600/30 to-indigo-700/30 border border-sky-400/60 flex items-center justify-center shadow-[0_0_15px_rgba(56,189,248,0.4)]">
-                <Rocket className="w-5 h-5 text-sky-300 animate-pulse" />
+                <Rocket className="w-5 h-5 text-sky-300" />
                 <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-emerald-400 rounded-full border border-slate-950 animate-ping" />
               </div>
 
@@ -176,12 +170,12 @@ export function ProjectStoryIntro({ onComplete }: ProjectStoryIntroProps) {
             <div className="absolute left-0 top-2 bottom-2 w-1.5 bg-gradient-to-b from-sky-400 via-indigo-400 to-teal-400 rounded-r shadow-[0_0_10px_rgba(56,189,248,0.8)]" />
 
             <div className="pl-3.5 flex items-start gap-2">
-              <span className="text-sky-400 font-bold text-xl leading-none mt-0.5 animate-pulse">
+              <span className="text-sky-400 font-bold text-xl leading-none mt-0.5">
                 &gt;
               </span>
               <p className="text-base sm:text-lg text-slate-100 font-medium leading-relaxed drop-shadow-[0_0_12px_rgba(255,255,255,0.2)]">
                 {STORY_SENTENCES[currentIdx]}
-                <span className="inline-block w-2.5 h-4 ml-1.5 bg-sky-400 align-middle animate-pulse" />
+                <span className="inline-block w-2.5 h-4 ml-1.5 bg-sky-400 align-middle" />
               </p>
             </div>
           </div>
@@ -198,16 +192,15 @@ export function ProjectStoryIntro({ onComplete }: ProjectStoryIntroProps) {
                   onClick={() => {
                     try {
                       soundEngine.playUiClick();
-                    } catch {}
+                    } catch { }
                     setCurrentIdx(idx);
                   }}
-                  className={`h-2.5 rounded-sm transition-all duration-300 ${
-                    idx === currentIdx
-                      ? "w-10 bg-gradient-to-r from-sky-400 to-teal-300 shadow-[0_0_12px_rgba(56,189,248,0.9)]"
-                      : idx < currentIdx
+                  className={`h-2.5 rounded-sm transition-all duration-300 ${idx === currentIdx
+                    ? "w-10 bg-gradient-to-r from-sky-400 to-teal-300 shadow-[0_0_12px_rgba(56,189,248,0.9)]"
+                    : idx < currentIdx
                       ? "w-5 bg-sky-700 hover:bg-sky-500"
                       : "w-3 bg-slate-800 hover:bg-slate-700"
-                  }`}
+                    }`}
                   title={`Jump to transmission ${idx + 1}`}
                 />
               ))}

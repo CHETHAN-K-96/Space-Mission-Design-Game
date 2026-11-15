@@ -288,7 +288,7 @@ export function MinecraftGame() {
             } else {
               try {
                 canvasRef.current?.requestPointerLock?.();
-              } catch {}
+              } catch { }
             }
             return next;
           });
@@ -308,7 +308,7 @@ export function MinecraftGame() {
           } else {
             try {
               canvasRef.current?.requestPointerLock?.();
-            } catch {}
+            } catch { }
           }
           return next;
         });
@@ -583,7 +583,7 @@ export function MinecraftGame() {
               setIsPaused(false);
               try {
                 canvasRef.current?.requestPointerLock?.();
-              } catch {}
+              } catch { }
             }}
             onOpenBriefing={() => {
               setIsPaused(false);
@@ -612,7 +612,7 @@ export function MinecraftGame() {
             setScreenPhase("PLAYING");
             try {
               canvasRef.current?.requestPointerLock?.();
-            } catch {}
+            } catch { }
           }}
           onViewDebrief={() => {
             setShowDebrief(true);
@@ -632,7 +632,7 @@ export function MinecraftGame() {
               <span className="text-[11px] font-bold text-sky-400 tracking-widest uppercase mb-1">
                 TERMINAL COUNTDOWN
               </span>
-              <span className="text-7xl font-black text-white tracking-tight drop-shadow-[0_0_35px_rgba(16,185,129,0.85)] animate-pulse">
+              <span className="text-7xl font-black text-white tracking-tight drop-shadow-[0_0_35px_rgba(16,185,129,0.85)]">
                 {countdown === 0 ? "LIFTOFF!" : countdown}
               </span>
               <span className="text-[11px] font-mono text-emerald-400 font-bold tracking-wider mt-2 bg-slate-900/90 px-3.5 py-0.5 rounded-full border border-emerald-500/40">
@@ -667,7 +667,7 @@ export function MinecraftGame() {
           setIsPaused(false);
           try {
             canvasRef.current?.requestPointerLock?.();
-          } catch {}
+          } catch { }
         }}
       />
 
@@ -680,7 +680,7 @@ export function MinecraftGame() {
           setShowDebrief(false);
           try {
             canvasRef.current?.requestPointerLock?.();
-          } catch {}
+          } catch { }
         }}
       />
 

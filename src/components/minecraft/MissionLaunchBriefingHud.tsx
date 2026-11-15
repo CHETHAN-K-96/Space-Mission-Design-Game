@@ -35,15 +35,12 @@ export function MissionLaunchBriefingHud({
   const sentences =
     briefingData?.sentences || [
       `This mission faithfully recreates the real-life flight of ${mission.name} (${mission.counterpart}).`,
-      `The vehicle you will construct closely resembles the ${
-        mission.recommended_rocket || "certified aerospace launch vehicle"
+      `The vehicle you will construct closely resembles the ${mission.recommended_rocket || "certified aerospace launch vehicle"
       }.`,
       `Primary Scientific Objective: ${mission.scientificGoal || mission.desc}`,
-      `Stage 1 Propulsion Directive: ${
-        mission.stage1_desc || "Assemble the launch vehicle to achieve TWR > 1.0."
+      `Stage 1 Propulsion Directive: ${mission.stage1_desc || "Assemble the launch vehicle to achieve TWR > 1.0."
       }`,
-      `Stage 2 Spacecraft Directive: ${
-        mission.stage2_desc || "Integrate payload modules and power systems."
+      `Stage 2 Spacecraft Directive: ${mission.stage2_desc || "Integrate payload modules and power systems."
       }`,
       `Program Budget Constraint: Maximum certified cost ceiling of $${mission.budget_m}M.`,
       `Telemetry checks nominal. Flight Director, commence assembly!`,
@@ -52,7 +49,7 @@ export function MissionLaunchBriefingHud({
   const handleNext = () => {
     try {
       soundEngine.playUiClick();
-    } catch {}
+    } catch { }
     if (currentIdx < sentences.length - 1) {
       setCurrentIdx((prev) => prev + 1);
     } else {
@@ -63,7 +60,7 @@ export function MissionLaunchBriefingHud({
   const handlePrev = () => {
     try {
       soundEngine.playUiClick();
-    } catch {}
+    } catch { }
     if (currentIdx > 0) {
       setCurrentIdx((prev) => prev - 1);
     }
@@ -72,7 +69,7 @@ export function MissionLaunchBriefingHud({
   const handleSkip = () => {
     try {
       soundEngine.playUiClick();
-    } catch {}
+    } catch { }
     onComplete();
   };
 
@@ -138,7 +135,7 @@ export function MissionLaunchBriefingHud({
             <div className="flex items-center gap-3">
               {/* Mission Patch / Rocket Icon */}
               <div className="relative w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-950 to-teal-900 border border-emerald-500/60 flex items-center justify-center shadow-[0_0_15px_rgba(16,185,129,0.4)]">
-                <Rocket className="w-5 h-5 text-emerald-300 animate-pulse" />
+                <Rocket className="w-5 h-5 text-emerald-300" />
                 <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-emerald-400 rounded-full border border-slate-950 animate-ping" />
               </div>
 
@@ -203,12 +200,12 @@ export function MissionLaunchBriefingHud({
             <div className="absolute left-0 top-2 bottom-2 w-1.5 bg-gradient-to-b from-emerald-400 via-teal-400 to-sky-400 rounded-r shadow-[0_0_10px_rgba(52,211,153,0.8)]" />
 
             <div className="pl-3.5 flex items-start gap-2">
-              <span className="text-emerald-400 font-bold text-xl leading-none mt-0.5 animate-pulse">
+              <span className="text-emerald-400 font-bold text-xl leading-none mt-0.5 ">
                 &gt;
               </span>
               <p className="text-base sm:text-lg text-slate-100 font-medium leading-relaxed drop-shadow-[0_0_12px_rgba(255,255,255,0.2)]">
                 {sentences[currentIdx]}
-                <span className="inline-block w-2.5 h-4 ml-1.5 bg-emerald-400 align-middle animate-pulse" />
+                <span className="inline-block w-2.5 h-4 ml-1.5 bg-emerald-400 align-middle " />
               </p>
             </div>
           </div>
@@ -225,16 +222,15 @@ export function MissionLaunchBriefingHud({
                   onClick={() => {
                     try {
                       soundEngine.playUiClick();
-                    } catch {}
+                    } catch { }
                     setCurrentIdx(idx);
                   }}
-                  className={`h-2.5 rounded-sm transition-all duration-300 ${
-                    idx === currentIdx
+                  className={`h-2.5 rounded-sm transition-all duration-300 ${idx === currentIdx
                       ? "w-10 bg-gradient-to-r from-emerald-400 to-teal-300 shadow-[0_0_12px_rgba(52,211,153,0.9)]"
                       : idx < currentIdx
-                      ? "w-5 bg-emerald-800 hover:bg-emerald-600"
-                      : "w-3 bg-slate-800 hover:bg-slate-700"
-                  }`}
+                        ? "w-5 bg-emerald-800 hover:bg-emerald-600"
+                        : "w-3 bg-slate-800 hover:bg-slate-700"
+                    }`}
                   title={`Jump to directive ${idx + 1}`}
                 />
               ))}

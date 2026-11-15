@@ -139,7 +139,7 @@ export function GameInitLoading({ onComplete }: GameInitLoadingProps) {
         </div>
 
         {/* Bottom Hint */}
-        <div className="mt-12 text-[10px] text-white/60 tracking-wider font-mono animate-pulse">
+        <div className="mt-12 text-[10px] text-white/60 tracking-wider font-mono ">
           Click anywhere or press any key to skip intro
         </div>
       </div>

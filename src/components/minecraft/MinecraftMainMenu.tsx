@@ -98,7 +98,7 @@ export function MinecraftMainMenu({
           </div>
 
           {/* Yellow Bouncing Splash Text */}
-          <div className="absolute -bottom-5 sm:-bottom-6 right-[-20px] sm:right-[-40px] rotate-[-18deg] animate-pulse z-20 pointer-events-none">
+          <div className="absolute -bottom-5 sm:-bottom-6 right-[-20px] sm:right-[-40px] rotate-[-18deg] z-20 pointer-events-none">
             <span className="text-yellow-300 text-xs sm:text-sm font-pixel font-bold drop-shadow-[0_2px_0_#000] px-2 py-0.5 whitespace-nowrap">
               {splashText}
             </span>
@@ -252,8 +252,8 @@ export function MinecraftMainMenu({
                       });
                     }}
                     className={`p-3.5 rounded border text-left transition-all flex flex-col gap-1.5 ${isSelected
-                        ? "bg-sky-950/80 border-sky-400 shadow-md shadow-sky-600/30"
-                        : "bg-slate-900 hover:bg-slate-800 border-slate-700 hover:border-slate-500"
+                      ? "bg-sky-950/80 border-sky-400 shadow-md shadow-sky-600/30"
+                      : "bg-slate-900 hover:bg-slate-800 border-slate-700 hover:border-slate-500"
                       }`}
                   >
                     <div className="flex items-center justify-between">

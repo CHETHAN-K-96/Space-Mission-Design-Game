@@ -77,7 +77,7 @@ export function OrbitalMissionSimulator({
   // Time Warp State
   const [timeWarp, setTimeWarp] = useState<number>(1);
   const [isPaused, setIsPaused] = useState<boolean>(false);
-  const [cameraFocus, setCameraFocus] = useState<"EARTH" | "SATELLITE" | "TARGET">("EARTH");
+  const [cameraFocus, setCameraFocus] = useState<"EARTH" | "SATELLITE" | "TARGET" | "MARS">("EARTH");
 
   // Flight Phase & Target Completion State
   const [targetReached, setTargetReached] = useState<boolean>(
@@ -86,6 +86,7 @@ export function OrbitalMissionSimulator({
   const [isOperationalOrbit, setIsOperationalOrbit] = useState<boolean>(
     officialData.flightProfileType === "EARTH_LEO_ORBIT"
   );
+  const [showBanner, setShowBanner] = useState<boolean>(true);
 
   // Official Data Drawer State
   const [showDataDrawer, setShowDataDrawer] = useState<boolean>(false);
@@ -104,7 +105,7 @@ export function OrbitalMissionSimulator({
   // Mutable refs for animation loop
   const timeWarpRef = useRef<number>(1);
   const isPausedRef = useRef<boolean>(false);
-  const cameraFocusRef = useRef<"EARTH" | "SATELLITE" | "TARGET">("EARTH");
+  const cameraFocusRef = useRef<"EARTH" | "SATELLITE" | "TARGET" | "MARS">("EARTH");
   const targetReachedRef = useRef<boolean>(officialData.flightProfileType === "EARTH_LEO_ORBIT");
   const isOperationalOrbitRef = useRef<boolean>(
     officialData.flightProfileType === "EARTH_LEO_ORBIT"
@@ -141,6 +142,7 @@ export function OrbitalMissionSimulator({
     isOperationalOrbitRef.current = false;
     setTargetReached(false);
     targetReachedRef.current = false;
+    setShowBanner(true);
     try {
       soundEngine.playUiClick();
     } catch {}
@@ -167,7 +169,7 @@ export function OrbitalMissionSimulator({
     ctx.fillStyle = "#0c2b54";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Subtle ocean gradients
+    // Ocean gradients
     const grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
     grad.addColorStop(0, "#081d38");
     grad.addColorStop(0.5, "#14447a");
@@ -178,7 +180,7 @@ export function OrbitalMissionSimulator({
     // Continents
     ctx.fillStyle = "#1e5e34";
 
-    // North America & South America
+    // North & South America
     ctx.beginPath();
     ctx.ellipse(250, 160, 80, 110, -0.25, 0, Math.PI * 2);
     ctx.fill();
@@ -202,7 +204,7 @@ export function OrbitalMissionSimulator({
     ctx.ellipse(820, 360, 50, 40, 0, 0, Math.PI * 2);
     ctx.fill();
 
-    // Green land highlights
+    // Land highlights
     ctx.fillStyle = "#2d7a46";
     ctx.beginPath();
     ctx.ellipse(730, 200, 70, 50, 0, 0, Math.PI * 2);
@@ -259,18 +261,114 @@ export function OrbitalMissionSimulator({
     return tex;
   };
 
+  // Helper to generate procedural Mars texture (Red Planet with polar caps and volcanic plains)
+  const createMarsTexture = (): THREE.CanvasTexture => {
+    const canvas = document.createElement("canvas");
+    canvas.width = 512;
+    canvas.height = 256;
+    const ctx = canvas.getContext("2d")!;
+
+    // Base Martian Rust Orange/Red
+    ctx.fillStyle = "#b45309";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Subtle Martian dust gradient
+    const grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+    grad.addColorStop(0, "#78350f");
+    grad.addColorStop(0.5, "#c2410c");
+    grad.addColorStop(1, "#78350f");
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Dark basaltic plains (Syrtis Major & Valles Marineris)
+    ctx.fillStyle = "#451a03";
+    ctx.beginPath();
+    ctx.ellipse(180, 140, 75, 45, -0.2, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.ellipse(360, 130, 90, 50, 0.15, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Valles Marineris canyon rift
+    ctx.strokeStyle = "#290c00";
+    ctx.lineWidth = 6;
+    ctx.beginPath();
+    ctx.moveTo(140, 145);
+    ctx.lineTo(260, 150);
+    ctx.stroke();
+
+    // Brilliant white Polar Ice Caps (Water ice & Dry ice)
+    ctx.fillStyle = "#f8fafc";
+    ctx.beginPath();
+    ctx.arc(canvas.width / 2, 8, 48, 0, Math.PI);
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.arc(canvas.width / 2, canvas.height - 8, 40, Math.PI, Math.PI * 2);
+    ctx.fill();
+
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.needsUpdate = true;
+    return tex;
+  };
+
+  // Helper to generate metallic Asteroid (16) Psyche texture
+  const createPsycheTexture = (): THREE.CanvasTexture => {
+    const canvas = document.createElement("canvas");
+    canvas.width = 512;
+    canvas.height = 256;
+    const ctx = canvas.getContext("2d")!;
+
+    // Metallic iron-nickel stone tone
+    ctx.fillStyle = "#71717a";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Metallic silicate patches
+    ctx.fillStyle = "#52525b";
+    for (let i = 0; i < 35; i++) {
+      ctx.beginPath();
+      ctx.arc(
+        Math.random() * canvas.width,
+        Math.random() * canvas.height,
+        10 + Math.random() * 30,
+        0,
+        Math.PI * 2
+      );
+      ctx.fill();
+    }
+
+    // High-reflectance metallic ridges
+    ctx.fillStyle = "#a1a1aa";
+    for (let i = 0; i < 25; i++) {
+      ctx.beginPath();
+      ctx.arc(
+        Math.random() * canvas.width,
+        Math.random() * canvas.height,
+        3 + Math.random() * 8,
+        0,
+        Math.PI * 2
+      );
+      ctx.fill();
+    }
+
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.needsUpdate = true;
+    return tex;
+  };
+
   useEffect(() => {
     if (!canvasRef.current) return;
 
-    // Guaranteed viewport sizing
+    // Viewport dimensions
     const w = window.innerWidth || 1280;
     const h = window.innerHeight || 720;
 
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x010308); // Deep space dark void
+    scene.background = new THREE.Color(0x010206); // Deep space dark void
 
     const camera = new THREE.PerspectiveCamera(45, Math.max(0.1, w / h), 0.1, 5000);
-    camera.position.set(0, 22, 58);
+    camera.position.set(0, 26, 62);
 
     const renderer = new THREE.WebGLRenderer({
       canvas: canvasRef.current,
@@ -285,37 +383,95 @@ export function OrbitalMissionSimulator({
     scene.add(ambientLight);
 
     const sunLight = new THREE.DirectionalLight(0xffffff, 2.8);
-    sunLight.position.set(80, 40, 60);
+    sunLight.position.set(90, 50, 70);
     scene.add(sunLight);
 
-    const backFillLight = new THREE.DirectionalLight(0x38bdf8, 1.0);
-    backFillLight.position.set(-80, -30, -60);
+    const backFillLight = new THREE.DirectionalLight(0x38bdf8, 0.9);
+    backFillLight.position.set(-90, -30, -70);
     scene.add(backFillLight);
 
-    // Deep Space Starfield
-    const starGeo = new THREE.BufferGeometry();
-    const starCount = 3000;
-    const starPos = new Float32Array(starCount * 3);
-    for (let i = 0; i < starCount * 3; i += 3) {
-      starPos[i] = (Math.random() - 0.5) * 1600;
-      starPos[i + 1] = (Math.random() - 0.5) * 1600;
-      starPos[i + 2] = (Math.random() - 0.5) * 1600;
+    // =========================================================================
+    // 1. IMMERSIVE DEEP SPACE STARFIELD (NO ARTIFICIAL GRID)
+    // =========================================================================
+    // Layer A: 4,000 Distant Tiny Background Stars
+    const bgStarGeo = new THREE.BufferGeometry();
+    const bgStarCount = 4000;
+    const bgStarPos = new Float32Array(bgStarCount * 3);
+    for (let i = 0; i < bgStarCount * 3; i += 3) {
+      bgStarPos[i] = (Math.random() - 0.5) * 2200;
+      bgStarPos[i + 1] = (Math.random() - 0.5) * 2200;
+      bgStarPos[i + 2] = (Math.random() - 0.5) * 2200;
     }
-    starGeo.setAttribute("position", new THREE.BufferAttribute(starPos, 3));
-    const starMat = new THREE.PointsMaterial({
-      color: 0xffffff,
-      size: 1.8,
+    bgStarGeo.setAttribute("position", new THREE.BufferAttribute(bgStarPos, 3));
+    const bgStarMat = new THREE.PointsMaterial({
+      color: 0xdbeafe,
+      size: 1.2,
       sizeAttenuation: false,
     });
-    const starPoints = new THREE.Points(starGeo, starMat);
-    scene.add(starPoints);
+    const bgStars = new THREE.Points(bgStarGeo, bgStarMat);
+    scene.add(bgStars);
 
-    // NASA GMAT EQUATORIAL REFERENCE PLANE GRID (Green/Cyan Grid)
-    const gmatGrid = new THREE.GridHelper(64, 24, 0x06b6d4, 0x1e293b);
-    gmatGrid.position.set(0, 0, 0);
-    scene.add(gmatGrid);
+    // Layer B: 1,500 Prominent Stars with Real Astronomical Spectral Colors
+    const brightStarGeo = new THREE.BufferGeometry();
+    const brightStarCount = 1500;
+    const brightStarPos = new Float32Array(brightStarCount * 3);
+    const brightStarColors = new Float32Array(brightStarCount * 3);
 
-    // 1. EARTH SPHERE (PROMINENT & GLOWING)
+    // Spectral class colors: O/B Blue, A/F White, G Yellow, M Red
+    const spectralPalettes = [
+      new THREE.Color(0x93c5fd), // O/B Hot Blue
+      new THREE.Color(0xffffff), // A Pure White
+      new THREE.Color(0xfef08a), // G Solar Warm Yellow
+      new THREE.Color(0xfba5a5), // M Red Giant
+    ];
+
+    for (let i = 0; i < brightStarCount; i++) {
+      const idx = i * 3;
+      brightStarPos[idx] = (Math.random() - 0.5) * 1800;
+      brightStarPos[idx + 1] = (Math.random() - 0.5) * 1800;
+      brightStarPos[idx + 2] = (Math.random() - 0.5) * 1800;
+
+      const c = spectralPalettes[Math.floor(Math.random() * spectralPalettes.length)];
+      brightStarColors[idx] = c.r;
+      brightStarColors[idx + 1] = c.g;
+      brightStarColors[idx + 2] = c.b;
+    }
+    brightStarGeo.setAttribute("position", new THREE.BufferAttribute(brightStarPos, 3));
+    brightStarGeo.setAttribute("color", new THREE.BufferAttribute(brightStarColors, 3));
+    const brightStarMat = new THREE.PointsMaterial({
+      vertexColors: true,
+      size: 2.2,
+      sizeAttenuation: false,
+    });
+    const brightStars = new THREE.Points(brightStarGeo, brightStarMat);
+    scene.add(brightStars);
+
+    // Layer C: Cosmic Dust / Galactic Nebula Plane Haze
+    const dustGeo = new THREE.BufferGeometry();
+    const dustCount = 800;
+    const dustPos = new Float32Array(dustCount * 3);
+    for (let i = 0; i < dustCount * 3; i += 3) {
+      const rad = 200 + Math.random() * 800;
+      const angle = Math.random() * Math.PI * 2;
+      dustPos[i] = rad * Math.cos(angle);
+      dustPos[i + 1] = (Math.random() - 0.5) * 120;
+      dustPos[i + 2] = rad * Math.sin(angle);
+    }
+    dustGeo.setAttribute("position", new THREE.BufferAttribute(dustPos, 3));
+    const dustMat = new THREE.PointsMaterial({
+      color: 0x6366f1,
+      size: 3.5,
+      transparent: true,
+      opacity: 0.35,
+      sizeAttenuation: true,
+    });
+    const dustPoints = new THREE.Points(dustGeo, dustMat);
+    scene.add(dustPoints);
+
+    // =========================================================================
+    // 2. CELESTIAL BODIES: EARTH, MOON, MARS & ASTEROID (16) PSYCHE
+    // =========================================================================
+    // A. EARTH SPHERE
     const earthRadius = 7.5;
     const earthGeo = new THREE.SphereGeometry(earthRadius, 64, 64);
     const earthTex = createEarthTexture();
@@ -327,7 +483,7 @@ export function OrbitalMissionSimulator({
     const earthMesh = new THREE.Mesh(earthGeo, earthMat);
     scene.add(earthMesh);
 
-    // Earth Atmosphere Halo Aura
+    // Earth Atmosphere Halo Aura (Radius 7.9)
     const auraGeo = new THREE.SphereGeometry(earthRadius * 1.05, 32, 32);
     const auraMat = new THREE.MeshBasicMaterial({
       color: 0x38bdf8,
@@ -338,10 +494,13 @@ export function OrbitalMissionSimulator({
     const auraMesh = new THREE.Mesh(auraGeo, auraMat);
     earthMesh.add(auraMesh);
 
-    // 2. CELESTIAL TARGETS & DESTINATION OBJECTS
+    // Dynamic Celestial Target Meshes
     let moonMesh: THREE.Mesh | null = null;
+    let marsMesh: THREE.Mesh | null = null;
     let targetMesh: THREE.Mesh | null = null;
-    let targetPos = new THREE.Vector3(38, 10, -28);
+
+    let targetPos = new THREE.Vector3(38, 8, -26);
+    let marsPos = new THREE.Vector3(34, 4, 16);
 
     // Target operational orbit points (DRO, L2 Halo, Asteroid orbit)
     const targetOrbitPoints: THREE.Vector3[] = [];
@@ -437,20 +596,159 @@ export function OrbitalMissionSimulator({
       const haloLine = new THREE.Line(haloGeo, haloMat);
       scene.add(haloLine);
     } else if (missionKey === "asteroid_scout") {
-      // Asteroid (16) Psyche
-      targetPos.set(42, 10, -26);
-      const astGeo = new THREE.DodecahedronGeometry(2.0, 1);
-      const astMat = new THREE.MeshStandardMaterial({
-        color: 0xa8a29e,
-        metalness: 0.8,
+      // =======================================================================
+      // 3. 3D MARS MODEL FOR GRAVITY ASSIST SLINGSHOT
+      // =======================================================================
+      const marsRadius = 4.2;
+      const marsGeo = new THREE.SphereGeometry(marsRadius, 48, 48);
+      const marsTex = createMarsTexture();
+      const marsMat = new THREE.MeshStandardMaterial({
+        map: marsTex,
+        roughness: 0.6,
+        metalness: 0.1,
+      });
+      marsMesh = new THREE.Mesh(marsGeo, marsMat);
+      marsPos.set(34, 4, 16);
+      marsMesh.position.copy(marsPos);
+      scene.add(marsMesh);
+
+      // Mars Atmosphere Halo (Thin orange/salmon haze)
+      const marsAuraGeo = new THREE.SphereGeometry(marsRadius * 1.05, 32, 32);
+      const marsAuraMat = new THREE.MeshBasicMaterial({
+        color: 0xf97316,
+        transparent: true,
+        opacity: 0.22,
+        wireframe: true,
+      });
+      const marsAura = new THREE.Mesh(marsAuraGeo, marsAuraMat);
+      marsMesh.add(marsAura);
+
+      // Mars Orbit Line around Solar Reference
+      const marsDist = marsPos.length();
+      const marsOrbitCurve = new THREE.EllipseCurve(
+        0,
+        0,
+        marsDist,
+        marsDist,
+        0,
+        2 * Math.PI,
+        false,
+        0
+      );
+      const marsOrbitPts = marsOrbitCurve.getPoints(120).map((p) => new THREE.Vector3(p.x, 0, p.y));
+      const marsOrbitGeo = new THREE.BufferGeometry().setFromPoints(marsOrbitPts);
+      const marsOrbitMat = new THREE.LineBasicMaterial({
+        color: 0xb45309,
+        transparent: true,
+        opacity: 0.4,
+      });
+      const marsOrbitLine = new THREE.Line(marsOrbitGeo, marsOrbitMat);
+      scene.add(marsOrbitLine);
+
+      // =======================================================================
+      // 3D ASTEROID BELT (BETWEEN MARS & OUTER BOUNDARY)
+      // =======================================================================
+      targetPos.set(72, 6, -34); // Position of target asteroid (16) Psyche
+
+      // Swarm of 3,000 Rocky Asteroid Particles
+      const astBeltCount = 3000;
+      const astBeltGeo = new THREE.BufferGeometry();
+      const astBeltPos = new Float32Array(astBeltCount * 3);
+      const astBeltColors = new Float32Array(astBeltCount * 3);
+
+      const rockPalette = [
+        new THREE.Color(0x78716c), // Stone Grey
+        new THREE.Color(0xa8a29e), // Nickel-Iron Reflective Grey
+        new THREE.Color(0x57534e), // Carbonaceous Dark Brown
+        new THREE.Color(0x44403c), // Dark Basalt
+      ];
+
+      let validBeltCount = 0;
+      for (let i = 0; i < astBeltCount; i++) {
+        // Toroidal ring radius from 58 to 92
+        const rBelt = 58 + Math.random() * 34;
+        const thetaBelt = Math.random() * Math.PI * 2;
+        const xB = rBelt * Math.cos(thetaBelt);
+        const yB = (Math.random() - 0.5) * 8.0;
+        const zB = rBelt * Math.sin(thetaBelt);
+
+        // Clearance / Exclusion Zone around Psyche & Trajectory path
+        const distToPsyche = Math.hypot(xB - targetPos.x, yB - targetPos.y, zB - targetPos.z);
+        if (distToPsyche < 10.0) {
+          continue; // Keep Psyche orbital approach 100% collision-free
+        }
+
+        const idx = validBeltCount * 3;
+        astBeltPos[idx] = xB;
+        astBeltPos[idx + 1] = yB;
+        astBeltPos[idx + 2] = zB;
+
+        const c = rockPalette[Math.floor(Math.random() * rockPalette.length)];
+        astBeltColors[idx] = c.r;
+        astBeltColors[idx + 1] = c.g;
+        astBeltColors[idx + 2] = c.b;
+        validBeltCount++;
+      }
+
+      astBeltGeo.setAttribute(
+        "position",
+        new THREE.BufferAttribute(astBeltPos.subarray(0, validBeltCount * 3), 3)
+      );
+      astBeltGeo.setAttribute(
+        "color",
+        new THREE.BufferAttribute(astBeltColors.subarray(0, validBeltCount * 3), 3)
+      );
+
+      const astBeltMat = new THREE.PointsMaterial({
+        vertexColors: true,
+        size: 1.8,
+        sizeAttenuation: true,
+      });
+      const astBeltPoints = new THREE.Points(astBeltGeo, astBeltMat);
+      scene.add(astBeltPoints);
+
+      // Discrete 3D Irregular Rocky Asteroid Meshes Scattered in the Belt
+      for (let i = 0; i < 45; i++) {
+        const rRock = 60 + Math.random() * 30;
+        const thRock = Math.random() * Math.PI * 2;
+        const xr = rRock * Math.cos(thRock);
+        const yr = (Math.random() - 0.5) * 6.0;
+        const zr = rRock * Math.sin(thRock);
+
+        if (Math.hypot(xr - targetPos.x, yr - targetPos.y, zr - targetPos.z) < 12.0) {
+          continue;
+        }
+
+        const rockRadius = 0.6 + Math.random() * 0.9;
+        const rGeo = new THREE.DodecahedronGeometry(rockRadius, 0);
+        const rMat = new THREE.MeshStandardMaterial({
+          color: 0x78716c,
+          roughness: 0.8,
+          metalness: 0.3,
+        });
+        const rockMesh = new THREE.Mesh(rGeo, rMat);
+        rockMesh.position.set(xr, yr, zr);
+        rockMesh.rotation.set(Math.random() * 3, Math.random() * 3, Math.random() * 3);
+        scene.add(rockMesh);
+      }
+
+      // =======================================================================
+      // TARGET ASTEROID (16) PSYCHE (PROMINENT METALLIC ASTEROID)
+      // =======================================================================
+      const psycheRadius = 2.4;
+      const psycheGeo = new THREE.DodecahedronGeometry(psycheRadius, 1);
+      const psycheTex = createPsycheTexture();
+      const psycheMat = new THREE.MeshStandardMaterial({
+        map: psycheTex,
+        metalness: 0.85,
         roughness: 0.3,
       });
-      targetMesh = new THREE.Mesh(astGeo, astMat);
+      targetMesh = new THREE.Mesh(psycheGeo, psycheMat);
       targetMesh.position.copy(targetPos);
       scene.add(targetMesh);
 
-      // Science Orbit around Asteroid Psyche
-      const astRadius = 3.6;
+      // Science Orbit Ring around Asteroid Psyche (Clear radius 4.4, zero collisions)
+      const astRadius = 4.4;
       const numAst = 80;
       for (let i = 0; i <= numAst; i++) {
         const theta = (i / numAst) * Math.PI * 2;
@@ -471,7 +769,7 @@ export function OrbitalMissionSimulator({
       scene.add(astOrbitLine);
     }
 
-    // 3. GROUND STATIONS ON EARTH
+    // 4. GROUND STATIONS ON EARTH
     const stationMeshes: { name: string; mesh: THREE.Mesh; pos: THREE.Vector3 }[] = [];
     GROUND_STATIONS.forEach((gs) => {
       const gsPos = latLonToVector3(gs.lat, gs.lon, earthRadius + 0.15);
@@ -483,7 +781,9 @@ export function OrbitalMissionSimulator({
       stationMeshes.push({ name: gs.name, mesh: dotMesh, pos: gsPos });
     });
 
-    // 4. GUARANTEED AUTHENTIC TRAJECTORIES (NASA GMAT / CELESTRAK ACCURATE)
+    // =========================================================================
+    // 5. AUTHENTIC MULTI-REVOLUTION TRAJECTORIES (NASA MOMENTUM BUILDING)
+    // =========================================================================
     const parkingRadius = earthRadius + 2.8;
 
     // Green/Cyan: Earth LEO Parking Orbit Reference Ring
@@ -509,10 +809,8 @@ export function OrbitalMissionSimulator({
     parkingLine.rotation.x = Math.PI * 0.15;
     scene.add(parkingLine);
 
-    // Array of 3D Transfer Trajectory Points (Outbound Flight from Earth to Target)
+    // Array of 3D Transfer Trajectory Points
     const transferPoints: THREE.Vector3[] = [];
-
-    // Array of Continuous Orbital Points (for LEO Satellites like Sentinel-6 / ISS)
     const continuousOrbitPoints: THREE.Vector3[] = [];
 
     if (missionKey === "earth_sentinel") {
@@ -522,23 +820,66 @@ export function OrbitalMissionSimulator({
       const numPts = 180;
       for (let i = 0; i <= numPts; i++) {
         const theta = (i / numPts) * Math.PI * 2;
-        // Apply 66.04° inclination rotation
         const x = r * Math.cos(theta);
         const y = r * Math.sin(theta) * Math.sin(incRad);
         const z = r * Math.sin(theta) * Math.cos(incRad);
         continuousOrbitPoints.push(new THREE.Vector3(x, y, z));
       }
     } else if (missionKey === "artemis_lunar") {
-      // AUTHENTIC NASA TLI TRAJECTORY: From KSC Earth Parking Orbit to Moon
-      const p0 = new THREE.Vector3(-parkingRadius, 1.2, 0);
-      const p1 = new THREE.Vector3(-parkingRadius * 0.4, 8, 14);
-      const p2 = new THREE.Vector3(targetPos.x * 0.5, targetPos.y + 4, targetPos.z * 0.5);
-      const p3 = targetPos.clone().add(new THREE.Vector3(-4.8, 0, 0));
-      const bezier = new THREE.CubicBezierCurve3(p0, p1, p2, p3);
-      const outbound = bezier.getPoints(120);
-      outbound.forEach((pt) => transferPoints.push(new THREE.Vector3(pt.x, pt.y, pt.z)));
+      // =======================================================================
+      // ARTEMIS: 2+ EARTH PHASING ORBITS (MOMENTUM BUILD) -> TLI -> MOON DRO
+      // =======================================================================
+      // Revolution 1: Initial LEO parking orbit (~250 km, radius ~10.4)
+      const numRev1 = 60;
+      for (let i = 0; i < numRev1; i++) {
+        const th = (i / numRev1) * Math.PI * 2;
+        const r = parkingRadius;
+        transferPoints.push(
+          new THREE.Vector3(
+            r * Math.cos(th),
+            r * Math.sin(th) * Math.sin(0.3),
+            r * Math.sin(th) * Math.cos(0.3)
+          )
+        );
+      }
+
+      // Revolution 2: Apogee-raising phasing orbit (momentum accumulation, r: 10.4 -> 14.8)
+      const numRev2 = 80;
+      for (let i = 0; i < numRev2; i++) {
+        const th = (i / numRev2) * Math.PI * 2;
+        // Elliptical expansion to build momentum towards Moon intercept
+        const a = parkingRadius + 2.4;
+        const b = parkingRadius + 1.2;
+        transferPoints.push(
+          new THREE.Vector3(
+            a * Math.cos(th),
+            b * Math.sin(th) * Math.sin(0.4) + 1.2 * Math.sin(th),
+            b * Math.sin(th) * Math.cos(0.4)
+          )
+        );
+      }
+
+      // TLI Escape Kick & Outbound Cislunar Arc to Moon
+      const pEscape = new THREE.Vector3(-parkingRadius, 1.2, 0);
+      const pMid1 = new THREE.Vector3(-parkingRadius * 0.2, 12, 16);
+      const pMid2 = new THREE.Vector3(targetPos.x * 0.5, targetPos.y + 6, targetPos.z * 0.5);
+      const pMoonApproach = targetPos.clone().add(new THREE.Vector3(-4.8, 0, 0));
+      const tliBezier = new THREE.CubicBezierCurve3(pEscape, pMid1, pMid2, pMoonApproach);
+      const outboundPts = tliBezier.getPoints(90);
+      outboundPts.forEach((pt) => transferPoints.push(new THREE.Vector3(pt.x, pt.y, pt.z)));
     } else if (missionKey === "space_telescope") {
-      // AUTHENTIC NASA JWST L2 TRANSFER TRAJECTORY: Outbound to Sun-Earth L2 (1.5M km)
+      // JWST: 2 Earth parking loops + high-energy escape injection to L2
+      const numPhasing = 60;
+      for (let i = 0; i < numPhasing; i++) {
+        const th = (i / numPhasing) * Math.PI * 2;
+        transferPoints.push(
+          new THREE.Vector3(
+            parkingRadius * Math.cos(th),
+            parkingRadius * Math.sin(th) * 0.2,
+            parkingRadius * Math.sin(th)
+          )
+        );
+      }
       const p0 = new THREE.Vector3(0, parkingRadius, 1.0);
       const p1 = new THREE.Vector3(14, 12, -8);
       const p2 = new THREE.Vector3(28, 14, -18);
@@ -547,14 +888,61 @@ export function OrbitalMissionSimulator({
       const outbound = bezier.getPoints(120);
       outbound.forEach((pt) => transferPoints.push(new THREE.Vector3(pt.x, pt.y, pt.z)));
     } else if (missionKey === "asteroid_scout") {
-      // AUTHENTIC PSYCHE HELIOCENTRIC CRUISE TRAJECTORY
-      const p0 = new THREE.Vector3(parkingRadius, 0, 0);
-      const p1 = new THREE.Vector3(18, 6, 12);
-      const p2 = new THREE.Vector3(32, 10, -10);
-      const p3 = targetPos.clone().add(new THREE.Vector3(-3.6, 0, 0));
-      const bezier = new THREE.CubicBezierCurve3(p0, p1, p2, p3);
-      const outbound = bezier.getPoints(120);
-      outbound.forEach((pt) => transferPoints.push(new THREE.Vector3(pt.x, pt.y, pt.z)));
+      // =======================================================================
+      // PSYCHE: EARTH PHASING -> MARS GRAVITY ASSIST BOOST -> ASTEROID (16) PSYCHE
+      // =======================================================================
+      // 1. Earth Phasing Orbits (Momentum Accumulation out of Earth's gravity well)
+      const numEarthPhasing = 70;
+      for (let i = 0; i < numEarthPhasing; i++) {
+        const th = (i / numEarthPhasing) * Math.PI * 2;
+        const a = parkingRadius + (i / numEarthPhasing) * 2.2;
+        transferPoints.push(
+          new THREE.Vector3(a * Math.cos(th), a * Math.sin(th) * 0.25, a * Math.sin(th))
+        );
+      }
+
+      // 2. Outbound Hyperbolic Arc from Earth to Mars
+      const pEarthEject = new THREE.Vector3(parkingRadius + 2.2, 0, 0);
+      const pEarthToMars1 = new THREE.Vector3(16, 4, 8);
+      const pEarthToMars2 = new THREE.Vector3(26, 5, 14);
+      const pMarsFlybyIn = marsPos.clone().add(new THREE.Vector3(-6.2, 0, -2.0)); // Approaching Mars
+      const toMarsBezier = new THREE.CubicBezierCurve3(
+        pEarthEject,
+        pEarthToMars1,
+        pEarthToMars2,
+        pMarsFlybyIn
+      );
+      const toMarsPts = toMarsBezier.getPoints(60);
+      toMarsPts.forEach((pt) => transferPoints.push(new THREE.Vector3(pt.x, pt.y, pt.z)));
+
+      // 3. Mars Gravity Assist Slingshot Swing-by (Hyperbolic deflection close to Mars)
+      // Slingshot curves tightly around Mars (clear of surface by 2.0 units)
+      const numMarsSlingshot = 24;
+      for (let i = 0; i <= numMarsSlingshot; i++) {
+        const angle = -Math.PI * 0.6 + (i / numMarsSlingshot) * Math.PI * 1.1;
+        const rFlyby = 6.2;
+        transferPoints.push(
+          new THREE.Vector3(
+            marsPos.x + rFlyby * Math.cos(angle),
+            marsPos.y + (i / numMarsSlingshot) * 1.8,
+            marsPos.z + rFlyby * Math.sin(angle)
+          )
+        );
+      }
+
+      // 4. Boosted Slingshot Trajectory outward into the Asteroid Belt to (16) Psyche
+      const pMarsFlybyOut = transferPoints[transferPoints.length - 1];
+      const pMidBelt1 = new THREE.Vector3(48, 6, 4);
+      const pMidBelt2 = new THREE.Vector3(60, 6, -18);
+      const pPsycheApproach = targetPos.clone().add(new THREE.Vector3(-4.4, 0, 0));
+      const toPsycheBezier = new THREE.CubicBezierCurve3(
+        pMarsFlybyOut,
+        pMidBelt1,
+        pMidBelt2,
+        pPsycheApproach
+      );
+      const toPsychePts = toPsycheBezier.getPoints(70);
+      toPsychePts.forEach((pt) => transferPoints.push(new THREE.Vector3(pt.x, pt.y, pt.z)));
     } else {
       // SANDBOX / ISS REFERENCE: 51.64° LEO Orbit
       const incRad = 51.64 * (Math.PI / 180);
@@ -569,19 +957,19 @@ export function OrbitalMissionSimulator({
       }
     }
 
-    // Trajectory Line Render
+    // Render Trajectory Line
     const isLeoContinuous = officialData.flightProfileType === "EARTH_LEO_ORBIT";
     const primaryPoints = isLeoContinuous ? continuousOrbitPoints : transferPoints;
 
     const trajGeo = new THREE.BufferGeometry().setFromPoints(primaryPoints);
     const trajMat = new THREE.LineBasicMaterial({
-      color: isLeoContinuous ? 0x22c55e : 0xd946ef, // Green for LEO, Magenta for Deep Space
+      color: isLeoContinuous ? 0x22c55e : 0xd946ef, // Green for LEO, Electric Magenta for Deep Space
       linewidth: 3,
     });
     const trajLine = new THREE.Line(trajGeo, trajMat);
     scene.add(trajLine);
 
-    // Periapsis (Pe) & Apoapsis (Ap) Marker Dots (GMAT Style)
+    // Periapsis (Pe) & Apoapsis (Ap) Marker Dots
     if (primaryPoints.length > 10) {
       const pePt = primaryPoints[0];
       const apPt = primaryPoints[Math.floor(primaryPoints.length / 2)];
@@ -599,11 +987,13 @@ export function OrbitalMissionSimulator({
       scene.add(apMesh);
     }
 
-    // 5. 3D SATELLITE SPACECRAFT MODEL WITH GMAT COORDINATE TRIAD
+    // =========================================================================
+    // 6. 3D SATELLITE SPACECRAFT MODEL WITH GMAT COORDINATE TRIAD
+    // =========================================================================
     const satGroup = new THREE.Group();
 
-    // Central Gold Foil Bus
-    const busGeo = new THREE.BoxGeometry(1.2, 1.2, 1.6);
+    // Central Gold Foil Bus (Properly sized 0.9 x 0.9 x 1.2 to avoid collision)
+    const busGeo = new THREE.BoxGeometry(0.9, 0.9, 1.2);
     const busMat = new THREE.MeshStandardMaterial({
       color: 0xf59e0b, // Gold metallic foil
       metalness: 0.85,
@@ -612,49 +1002,49 @@ export function OrbitalMissionSimulator({
     const busMesh = new THREE.Mesh(busGeo, busMat);
     satGroup.add(busMesh);
 
-    // Solar Wings
-    const wingGeo = new THREE.BoxGeometry(2.4, 0.08, 0.9);
+    // Solar Wings (Sized 1.8 x 0.6)
+    const wingGeo = new THREE.BoxGeometry(1.8, 0.06, 0.7);
     const wingMat = new THREE.MeshStandardMaterial({
       color: 0x1d4ed8, // Deep blue solar cells
       metalness: 0.6,
       roughness: 0.3,
     });
     const leftWing = new THREE.Mesh(wingGeo, wingMat);
-    leftWing.position.set(-2.0, 0, 0);
+    leftWing.position.set(-1.4, 0, 0);
     satGroup.add(leftWing);
 
     const rightWing = new THREE.Mesh(wingGeo, wingMat);
-    rightWing.position.set(2.0, 0, 0);
+    rightWing.position.set(1.4, 0, 0);
     satGroup.add(rightWing);
 
     // Parabolic High-Gain Dish
-    const dishGeo = new THREE.ConeGeometry(0.7, 0.4, 20, 1, true);
+    const dishGeo = new THREE.ConeGeometry(0.55, 0.3, 20, 1, true);
     const dishMat = new THREE.MeshStandardMaterial({
       color: 0xffffff,
       side: THREE.DoubleSide,
     });
     const dish = new THREE.Mesh(dishGeo, dishMat);
     dish.rotation.x = -Math.PI / 2;
-    dish.position.set(0, 0.8, 0.7);
+    dish.position.set(0, 0.65, 0.55);
     satGroup.add(dish);
 
-    // GMAT Coordinate Axes on Spacecraft (X Red = Velocity, Y Green = Normal, Z Blue = Co-normal)
-    const axesHelper = new THREE.AxesHelper(2.5);
+    // Attitude Axes (Red X = Velocity, Green Y = Normal, Blue Z = Co-normal)
+    const axesHelper = new THREE.AxesHelper(2.0);
     satGroup.add(axesHelper);
 
-    // Glowing Beacon Halo
-    const beaconGeo = new THREE.SphereGeometry(0.8, 16, 16);
+    // Spacecraft Beacon Halo
+    const beaconGeo = new THREE.SphereGeometry(0.6, 16, 16);
     const beaconMat = new THREE.MeshBasicMaterial({
       color: 0x38bdf8,
       transparent: true,
-      opacity: 0.45,
+      opacity: 0.4,
     });
     const beacon = new THREE.Mesh(beaconGeo, beaconMat);
     satGroup.add(beacon);
 
     scene.add(satGroup);
 
-    // 6. GROUND STATION COMMS LINE-OF-SIGHT LASER
+    // Ground Station Comms Line-of-sight Laser
     const commsLineGeo = new THREE.BufferGeometry().setFromPoints([
       new THREE.Vector3(0, 0, 0),
       new THREE.Vector3(0, 0, 0),
@@ -668,11 +1058,11 @@ export function OrbitalMissionSimulator({
     const commsLine = new THREE.Line(commsLineGeo, commsLineMat);
     scene.add(commsLine);
 
-    // Mouse Interaction for 3D Camera Orbit / Zoom
+    // 3D Camera Orbit & Pan Controls
     let isDragging = false;
     let prevMouseX = 0;
     let prevMouseY = 0;
-    let spherical = { radius: 52, theta: Math.PI / 3.2, phi: Math.PI / 3.0 };
+    let spherical = { radius: 56, theta: Math.PI / 3.2, phi: Math.PI / 3.0 };
 
     const onMouseDown = (e: MouseEvent) => {
       isDragging = true;
@@ -696,7 +1086,7 @@ export function OrbitalMissionSimulator({
     };
 
     const onWheel = (e: WheelEvent) => {
-      spherical.radius = Math.max(16, Math.min(220, spherical.radius + e.deltaY * 0.05));
+      spherical.radius = Math.max(16, Math.min(240, spherical.radius + e.deltaY * 0.05));
     };
 
     const dom = canvasRef.current;
@@ -705,7 +1095,9 @@ export function OrbitalMissionSimulator({
     window.addEventListener("mouseup", onMouseUp);
     dom.addEventListener("wheel", onWheel, { passive: true });
 
+    // =========================================================================
     // 7. ROBUST NON-LOOPING FLIGHT SIMULATION LOOP
+    // =========================================================================
     let animId: number;
     let lastTime = performance.now();
     let transferProgress = 0; // 0.0 to 1.0 (Outbound Transfer)
@@ -730,19 +1122,20 @@ export function OrbitalMissionSimulator({
           orbitAngle = 0;
         }
 
-        // Earth Rotation (Earth rotates naturally beneath orbital planes)
+        // Planetary rotations
         earthMesh.rotation.y += dt * 0.05 * (isPausedRef.current ? 0 : Math.min(timeWarpRef.current, 100));
 
         if (moonMesh) {
           moonMesh.rotation.y += dt * 0.03;
         }
+        if (marsMesh) {
+          marsMesh.rotation.y += dt * 0.04;
+        }
         if (targetMesh) {
-          targetMesh.rotation.y += dt * 0.1;
+          targetMesh.rotation.y += dt * 0.08;
         }
 
-        // =====================================================================
-        // FLIGHT PHASE RESOLUTION (STOPS ENDLESS RESET / LOOPING BUG)
-        // =====================================================================
+        // Flight Phase Resolution
         let currentPos = new THREE.Vector3();
         let currentVelHeading = new THREE.Vector3(0, 0, 1);
         let liveAltKm = officialData.keplerian.perigeeAltitudeKm;
@@ -752,7 +1145,6 @@ export function OrbitalMissionSimulator({
 
         if (isLeoContinuous) {
           // CONTINUOUS EARTH LEO ORBIT (Sentinel-6 / ISS)
-          // Progresses along its authentic 66.04° or 51.64° inclined track indefinitely
           if (!isPausedRef.current) {
             const revRate = (Math.PI * 2) / (officialData.keplerian.orbitalPeriodMin * 0.4);
             orbitAngle += dt * revRate * timeWarpRef.current;
@@ -780,7 +1172,7 @@ export function OrbitalMissionSimulator({
           if (!isOperationalOrbitRef.current) {
             // TRANSFER FLIGHT PHASE
             if (!isPausedRef.current) {
-              const baseRate = 0.02; // ~50s for transfer cruise at 1x
+              const baseRate = 0.018; // ~55s for transfer cruise at 1x
               transferProgress += dt * baseRate * timeWarpRef.current;
               metSeconds += dt * timeWarpRef.current * 80;
 
@@ -791,6 +1183,7 @@ export function OrbitalMissionSimulator({
                 setIsOperationalOrbit(true);
                 targetReachedRef.current = true;
                 setTargetReached(true);
+                setShowBanner(true);
                 try {
                   confetti({ particleCount: 220, spread: 110, origin: { y: 0.6 } });
                   soundEngine.playUiClick();
@@ -812,34 +1205,69 @@ export function OrbitalMissionSimulator({
 
             displayProgressPct = Math.round(safeProgress * 100);
 
-            // Dynamic Keplerian climb calculations
+            // Dynamic Keplerian climb calculations for each mission
             if (missionKey === "artemis_lunar") {
-              liveAltKm = Math.round(250 + Math.pow(safeProgress, 1.4) * 384150);
-              liveVelKmS = parseFloat((10.1 - Math.pow(safeProgress, 0.7) * 8.2).toFixed(2));
-              displayPhaseName =
-                safeProgress < 0.15
-                  ? "TLI TRANS-LUNAR INJECTION"
-                  : safeProgress < 0.8
-                  ? "CISLUNAR CRUISE PHASE"
-                  : "LUNAR DRO CAPTURE BURN";
+              if (safeProgress < 0.25) {
+                // Phasing Orbit 1: LEO Parking & momentum building
+                liveAltKm = Math.round(250 + safeProgress * 400);
+                liveVelKmS = 7.82;
+                displayPhaseName = "LEO PARKING ORBIT - REV 1";
+              } else if (safeProgress < 0.5) {
+                // Phasing Orbit 2: Apogee raise
+                const f = (safeProgress - 0.25) / 0.25;
+                liveAltKm = Math.round(250 + f * 3250);
+                liveVelKmS = parseFloat((8.5 - f * 0.8).toFixed(2));
+                displayPhaseName = "APOGEE RAISING - REV 2 (MOMENTUM BUILD)";
+              } else if (safeProgress < 0.6) {
+                // TLI Burn
+                liveAltKm = 3500;
+                liveVelKmS = 10.15;
+                displayPhaseName = "TRANSLUNAR INJECTION (TLI) BURN";
+              } else if (safeProgress < 0.9) {
+                // Cislunar Coast
+                const f = (safeProgress - 0.6) / 0.3;
+                liveAltKm = Math.round(3500 + Math.pow(f, 1.4) * 380900);
+                liveVelKmS = parseFloat((10.15 - Math.pow(f, 0.6) * 8.3).toFixed(2));
+                displayPhaseName = "CISLUNAR OUTBOUND CRUISE";
+              } else {
+                liveAltKm = Math.round(384400 + (safeProgress - 0.9) * 47810);
+                liveVelKmS = 2.38;
+                displayPhaseName = "OUTBOUND POWERED FLYBY & DRO CAPTURE";
+              }
             } else if (missionKey === "space_telescope") {
               liveAltKm = Math.round(300 + Math.pow(safeProgress, 1.3) * 1499700);
               liveVelKmS = parseFloat((9.8 - Math.pow(safeProgress, 0.6) * 9.5 + 0.28).toFixed(2));
               displayPhaseName =
-                safeProgress < 0.2
-                  ? "ARIANE 5 ESCAPE INJECTION"
+                safeProgress < 0.25
+                  ? "ARIANE 5 HIGH-ENERGY INJECTION"
                   : safeProgress < 0.8
-                  ? "SUN-EARTH L2 CRUISE"
+                  ? "SUN-EARTH L2 OUTBOUND CRUISE"
                   : "MCC-2 HALO INSERTION";
             } else {
-              liveAltKm = Math.round(500 + Math.pow(safeProgress, 1.2) * 403999500);
-              liveVelKmS = parseFloat((12.4 - safeProgress * 12.2 + 0.15).toFixed(2));
-              displayPhaseName =
-                safeProgress < 0.4
-                  ? "FALCON HEAVY HYPERBOLIC INJECTION"
-                  : safeProgress < 0.8
-                  ? "MARS GRAVITY ASSIST CRUISE"
-                  : "PSYCHE CAPTURE INSERTION";
+              // Psyche mission with Mars gravity assist
+              if (safeProgress < 0.25) {
+                // Earth phasing
+                liveAltKm = Math.round(250 + safeProgress * 600);
+                liveVelKmS = 11.2;
+                displayPhaseName = "EARTH GRAVITY EXIT PHASING";
+              } else if (safeProgress < 0.55) {
+                // Outbound to Mars
+                const f = (safeProgress - 0.25) / 0.3;
+                liveAltKm = Math.round(50000 + f * 224950000);
+                liveVelKmS = parseFloat((24.2 - f * 4.0).toFixed(2));
+                displayPhaseName = "HELIOCENTRIC CRUISE TO MARS";
+              } else if (safeProgress < 0.68) {
+                // Mars Gravity Assist Slingshot
+                liveAltKm = 225000000;
+                liveVelKmS = 28.6; // Slingshot boost!
+                displayPhaseName = "MARS GRAVITY ASSIST SLINGSHOT";
+              } else {
+                // Cruising into Asteroid Belt to Psyche
+                const f = (safeProgress - 0.68) / 0.32;
+                liveAltKm = Math.round(225000000 + f * 179000000);
+                liveVelKmS = parseFloat((28.6 - f * 28.48).toFixed(2));
+                displayPhaseName = "ASTEROID BELT CRUISE TO (16) PSYCHE";
+              }
             }
           } else {
             // OPERATIONAL TARGET ORBIT PHASE (PERMANENT, NEVER LOOPS BACK TO EARTH!)
@@ -974,6 +1402,8 @@ export function OrbitalMissionSimulator({
           targetCenter.copy(satGroup.position);
         } else if (cameraFocusRef.current === "TARGET") {
           targetCenter.copy(targetPos);
+        } else if (cameraFocusRef.current === "MARS" && marsMesh) {
+          targetCenter.copy(marsPos);
         }
 
         const camX =
@@ -1021,7 +1451,7 @@ export function OrbitalMissionSimulator({
   return (
     <div
       ref={mountRef}
-      className="fixed inset-0 z-50 bg-[#010308] font-mono select-none overflow-hidden flex flex-col justify-between"
+      className="fixed inset-0 z-50 bg-[#010206] font-mono select-none overflow-hidden flex flex-col justify-between"
     >
       {/* 3D WebGL Canvas */}
       <canvas
@@ -1030,7 +1460,7 @@ export function OrbitalMissionSimulator({
       />
 
       {/* ========================================================================= */}
-      {/* TOP HUD: NASA GMAT MISSION TITLE & DSN COMM NETWORK                       */}
+      {/* TOP HUD: MISSION IDENTIFICATION & DSN COMM NETWORK                        */}
       {/* ========================================================================= */}
       <div className="relative z-10 p-4 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pointer-events-none">
         {/* Mission Identification Card */}
@@ -1057,7 +1487,7 @@ export function OrbitalMissionSimulator({
                 ref={phaseTextRef}
                 className="text-[11px] text-amber-300 font-bold uppercase tracking-wider truncate max-w-[260px] sm:max-w-none"
               >
-                {isOperationalOrbit ? "OPERATIONAL TARGET ORBIT" : "TRANS-LUNAR INJECTION (TLI)"}
+                {isOperationalOrbit ? "OPERATIONAL TARGET ORBIT" : "MOMENTUM PHASING ORBIT"}
               </span>
             </div>
           </div>
@@ -1112,48 +1542,60 @@ export function OrbitalMissionSimulator({
       </div>
 
       {/* ========================================================================= */}
-      {/* TARGET OBJECTIVE REACHED BANNER (WHEN ORBIT COMPLETE)                     */}
+      {/* 5. RIGHT-SIDE FLOATING TARGET ACHIEVED NOTIFICATION (CENTER UNBLOCKED)    */}
       {/* ========================================================================= */}
-      {targetReached && (
-        <div className="relative z-10 self-center bg-gradient-to-r from-emerald-950/95 via-teal-950/95 to-slate-950/95 border-2 border-emerald-400 rounded-2xl p-4 sm:p-5 shadow-[0_0_50px_rgba(52,211,153,0.5)] flex flex-wrap items-center justify-between gap-4 backdrop-blur-md pointer-events-auto max-w-2xl mx-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-emerald-500/20 border border-emerald-400 flex items-center justify-center shrink-0">
-              <CheckCircle2 className="w-6 h-6 text-emerald-300" />
+      {targetReached && showBanner && (
+        <div className="fixed top-24 right-4 sm:right-6 z-40 max-w-sm w-full bg-gradient-to-b from-slate-950/95 via-emerald-950/90 to-slate-950/95 border-2 border-emerald-400/90 rounded-2xl p-4 shadow-[0_0_40px_rgba(52,211,153,0.4)] backdrop-blur-xl pointer-events-auto transition-all animate-in slide-in-from-right duration-300">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-full bg-emerald-500/20 border border-emerald-400 flex items-center justify-center shrink-0">
+                <CheckCircle2 className="w-5 h-5 text-emerald-300" />
+              </div>
+              <div className="flex flex-col">
+                <span className="text-[11px] text-emerald-400 font-black tracking-widest uppercase">
+                  TARGET OBJECTIVE ACHIEVED
+                </span>
+                <span className="text-xs font-bold text-white">
+                  Spacecraft In Operational Orbit
+                </span>
+              </div>
             </div>
-            <div className="flex flex-col">
-              <span className="text-xs text-emerald-400 font-bold tracking-widest uppercase">
-                MISSION TARGET ACHIEVED • OPERATIONAL ORBIT LOCKED
-              </span>
-              <span className="text-sm sm:text-base text-white font-extrabold">
-                {officialData.operationalOrbitDescription}
-              </span>
-            </div>
+            <button
+              onClick={() => setShowBanner(false)}
+              className="p-1 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition-colors"
+              title="Minimize Notification"
+            >
+              <X className="w-4 h-4" />
+            </button>
           </div>
 
-          <div className="flex items-center gap-2 ml-auto">
+          <p className="text-[11px] text-slate-300 mt-2.5 leading-relaxed bg-slate-950/60 p-2.5 rounded-xl border border-slate-800/80">
+            {officialData.operationalOrbitDescription}
+          </p>
+
+          <div className="flex items-center justify-between gap-2 mt-3 pt-2.5 border-t border-slate-800">
             {officialData.flightProfileType !== "EARTH_LEO_ORBIT" && (
               <button
                 onClick={handleReplayTransfer}
-                className="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-600 font-bold text-xs shadow-md transition-all flex items-center gap-1.5"
-                title="Re-run injection burn and outbound cruise"
+                className="px-2.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-700 text-[11px] font-bold flex items-center gap-1.5 transition-colors"
               >
                 <RotateCcw className="w-3.5 h-3.5" />
-                <span>Replay Transfer</span>
+                <span>Replay Flight</span>
               </button>
             )}
 
             <button
               onClick={onViewDebrief}
-              className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md transition-all hover:scale-105"
+              className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[11px] shadow-md transition-all hover:scale-105 ml-auto"
             >
-              VIEW DEBRIEF SCORE
+              View Mission Debrief
             </button>
           </div>
         </div>
       )}
 
       {/* ========================================================================= */}
-      {/* BOTTOM CONTROL DECK: TIME WARP, TELEMETRY METRICS & MISSION ACTIONS       */}
+      {/* BOTTOM CONTROL DECK: TELEMETRY METRICS, TIME WARP & ACTIONS               */}
       {/* ========================================================================= */}
       <div className="relative z-10 p-4 sm:p-6 flex flex-col gap-3 pointer-events-none">
         {/* Real-time Velocity & Altitude Ribbon */}
@@ -1287,6 +1729,18 @@ export function OrbitalMissionSimulator({
             >
               Satellite
             </button>
+            {missionKey === "asteroid_scout" && (
+              <button
+                onClick={() => setCameraFocus("MARS")}
+                className={`px-2.5 py-1 rounded-md text-xs font-semibold border transition-all ${
+                  cameraFocus === "MARS"
+                    ? "bg-orange-600 text-white border-orange-400"
+                    : "bg-slate-900 text-slate-400 border-slate-800 hover:bg-slate-800"
+                }`}
+              >
+                Mars
+              </button>
+            )}
             <button
               onClick={() => setCameraFocus("TARGET")}
               className={`px-2.5 py-1 rounded-md text-xs font-semibold border transition-all ${
