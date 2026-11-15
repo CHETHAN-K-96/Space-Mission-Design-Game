@@ -403,26 +403,74 @@ export function CockpitHud({
 
         {/* Stage-Dependent 4th Metric */}
         {devStage === "STAGE_1_ROCKET" ? (
-          <div className="bg-slate-950/85 border border-slate-800 p-2 rounded-lg shadow-sm flex flex-col justify-between">
+          <div
+            className={`bg-slate-950/85 border p-2 rounded-lg shadow-sm flex flex-col justify-between transition-colors ${
+              !telemetry.isStructurallyConnected || !telemetry.hasAerodynamicNose || !telemetry.hasPadEngine
+                ? telemetry.blocksCount > 0
+                  ? "border-rose-500 bg-rose-950/20"
+                  : "border-slate-800"
+                : "border-emerald-500/40 bg-emerald-950/10"
+            }`}
+          >
             <div className="flex justify-between text-[10px] text-slate-400 uppercase tracking-wider">
-              <span>Payload Container Slot</span>
-              <span className="text-[10px] text-sky-400">Stage 1 Envelope</span>
+              <span>Structural &amp; Aero Integrity</span>
+              <span
+                className={`text-[10px] font-bold ${
+                  telemetry.isStructurallyConnected && telemetry.hasAerodynamicNose
+                    ? "text-emerald-400"
+                    : "text-rose-400"
+                }`}
+              >
+                {telemetry.blocksCount === 0
+                  ? "Pad Empty"
+                  : telemetry.isStructurallyConnected && telemetry.hasAerodynamicNose && telemetry.hasPadEngine
+                  ? "Certified"
+                  : "Invalid Stack"}
+              </span>
             </div>
             <div className="text-sm font-bold mt-1 flex items-center gap-1.5">
-              {telemetry.hasPayloadContainer ? (
+              {telemetry.blocksCount === 0 ? (
                 <>
-                  <ShieldCheck className="w-4 h-4 text-emerald-400" />
-                  <span className="text-emerald-400">Container Mounted</span>
+                  <Box className="w-4 h-4 text-slate-500" />
+                  <span className="text-slate-400 text-xs">No Spacecraft</span>
+                </>
+              ) : !telemetry.isStructurallyConnected ? (
+                <>
+                  <ShieldAlert className="w-4 h-4 text-rose-400 shrink-0" />
+                  <span className="text-rose-400 text-xs truncate">Floating Air Gaps</span>
+                </>
+              ) : !telemetry.hasAerodynamicNose ? (
+                <>
+                  <ShieldAlert className="w-4 h-4 text-amber-400 shrink-0" />
+                  <span className="text-amber-400 text-xs truncate">Missing Nose Fairing</span>
+                </>
+              ) : !telemetry.hasPadEngine ? (
+                <>
+                  <ShieldAlert className="w-4 h-4 text-rose-400 shrink-0" />
+                  <span className="text-rose-400 text-xs truncate">No Pad Engine</span>
+                </>
+              ) : !telemetry.hasPayloadContainer ? (
+                <>
+                  <ShieldAlert className="w-4 h-4 text-amber-400 shrink-0" />
+                  <span className="text-amber-400 text-xs truncate">Missing Payload Slot</span>
                 </>
               ) : (
                 <>
-                  <Box className="w-4 h-4 text-slate-400" />
-                  <span className="text-slate-300">Direct Launch (Optional)</span>
+                  <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <span className="text-emerald-400 text-xs">Docked &amp; Streamlined</span>
                 </>
               )}
             </div>
-            <div className="text-[10px] text-slate-500 mt-1">
-              Detailed payload systems in Stage 2
+            <div className="text-[10px] text-slate-400 mt-1 truncate">
+              {telemetry.blocksCount === 0
+                ? "Mount stages on pad"
+                : !telemetry.isStructurallyConnected
+                ? "All stages must be docked contiguous"
+                : !telemetry.hasAerodynamicNose
+                ? "Cap top with aerodynamic fairing"
+                : !telemetry.hasPadEngine
+                ? "Mount engine touching pad"
+                : "Stage 1 Flight Ready"}
             </div>
           </div>
         ) : (

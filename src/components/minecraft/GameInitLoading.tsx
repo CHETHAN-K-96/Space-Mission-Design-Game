@@ -84,13 +84,12 @@ export function GameInitLoading({ onComplete }: GameInitLoadingProps) {
         }}
       />
 
-      {/* Center Mojang / NASA Aerospace Studios Box */}
       <div className="relative flex flex-col items-center max-w-xl w-full text-center z-10">
         {/* Iconic White Pixelated Box Logo */}
         <div className="mb-8 flex flex-col items-center">
           <div className="border-[5px] border-white px-8 py-5 shadow-[0_8px_0_rgba(0,0,0,0.35)] bg-[#c41525]/80 flex flex-col items-center gap-1">
             <span className="text-white text-2xl sm:text-4xl tracking-widest font-black uppercase drop-shadow-[0_4px_0_rgba(0,0,0,0.5)]">
-              MOJANG
+              HighFive
             </span>
             <span className="text-[10px] sm:text-xs text-white/90 tracking-[0.3em] font-bold uppercase">
               STUDIOS

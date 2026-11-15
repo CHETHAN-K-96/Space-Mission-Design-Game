@@ -116,6 +116,10 @@ export interface TelemetryData {
   payloadCount: number;
   sciencePts: number;
   hasPayloadContainer: boolean;
+  isStructurallyConnected: boolean;
+  hasAerodynamicNose: boolean;
+  hasPadEngine: boolean;
+  structuralIssues: string[];
   stage1Certified: boolean;
   stage2Certified: boolean;
   devStage: DevStage;

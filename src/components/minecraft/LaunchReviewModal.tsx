@@ -87,17 +87,74 @@ export function LaunchReviewModal({
       });
     }
 
+    // 1. Structural Docking & Contiguity Check (No Floating Blocks)
+    if (!telemetry.isStructurallyConnected && telemetry.blocksCount > 0) {
+      errors.push(
+        "Structural Discontinuity: Disconnected floating modules detected. All blocks must be docked and physically contiguous without air gaps."
+      );
+      logs.push({
+        text: "FAIL: Floating modules detected. Vehicle structure has air gaps.",
+        type: "fail",
+      });
+    } else if (telemetry.blocksCount > 0) {
+      logs.push({
+        text: "PASS: 100% Structural contiguity verified. All stages docked without air gaps.",
+        type: "pass",
+      });
+    }
+
+    // 2. Aerodynamic Fairing Capping Check
+    if (!telemetry.hasAerodynamicNose && telemetry.blocksCount > 0) {
+      errors.push(
+        "Aerodynamic Violation: Rocket is missing an aerodynamic nosecone fairing on top. Atmospheric Max-Q dynamic pressure will tear apart an unshielded blunt payload."
+      );
+      logs.push({
+        text: "FAIL: Missing aerodynamic nosecone fairing on top of rocket.",
+        type: "fail",
+      });
+    } else if (telemetry.blocksCount > 0) {
+      logs.push({
+        text: "PASS: Aerodynamic nosecone fairing installed. Max-Q airflow stream shielded.",
+        type: "pass",
+      });
+    }
+
+    // 3. Launch Pad Ground Engine Check
+    if (!telemetry.hasPadEngine && telemetry.blocksCount > 0) {
+      errors.push("No primary liftoff engine installed at launch pad level.");
+      logs.push({
+        text: "FAIL: Zero liftoff propulsion engines mounted at pad level.",
+        type: "fail",
+      });
+    }
+
+    // 4. Any other structural issues from simulator
+    if (telemetry.structuralIssues && telemetry.structuralIssues.length > 0) {
+      telemetry.structuralIssues.forEach((issue) => {
+        if (!errors.includes(issue)) {
+          errors.push(issue);
+          logs.push({
+            text: `FAIL: ${issue}`,
+            type: "fail",
+          });
+        }
+      });
+    }
+
     if (devStage === "STAGE_1_ROCKET") {
-      // Stage 1 (Rocket Launch Vehicle) - does not check internal satellite wiring!
+      // Stage 1 (Rocket Launch Vehicle)
       if (telemetry.hasPayloadContainer) {
         logs.push({
           text: "PASS: Satellite payload container block mounted beneath nose fairing.",
           type: "pass",
         });
       } else {
+        errors.push(
+          "Payload Missing: No satellite payload container block installed in the payload bay."
+        );
         logs.push({
-          text: "INFO: Suborbital / Booster test flight (without payload container).",
-          type: "info",
+          text: "FAIL: Missing satellite payload container block.",
+          type: "fail",
         });
       }
       logs.push({
@@ -259,7 +316,7 @@ export function LaunchReviewModal({
               : "CML: Level 1 (Concept Abort)"}
           </div>
 
-          {reviewResult.isFlightCertified && (
+          {reviewResult.isFlightCertified ? (
             <button
               onClick={() => {
                 onClose();
@@ -269,6 +326,11 @@ export function LaunchReviewModal({
             >
               <Rocket className="w-4 h-4" /> CONFIRM ORBITAL LAUNCH
             </button>
+          ) : (
+            <div className="bg-rose-950/60 border border-rose-600/50 text-rose-300 text-xs px-3 py-2 rounded flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
+              <span>LAUNCH BLOCKED: Resolve all structural &amp; aerodynamic errors</span>
+            </div>
           )}
         </div>
       </div>

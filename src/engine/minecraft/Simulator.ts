@@ -280,12 +280,135 @@ export class SpacecraftSimulator {
         b.type === BLOCKS.BUS_FRAME
     );
 
+    const structuralIssues: string[] = [];
+
+    // 1. Pad Grounding & Primary Liftoff Engine Validation
+    const padBlocks = blocks.filter((b) => b.y === PAD_Y + 1);
+    const hasPadEngine = padBlocks.some(
+      (b) =>
+        b.type === BLOCKS.MERLIN_CLUSTER ||
+        b.type === BLOCKS.RS25_ENGINE ||
+        b.type === BLOCKS.SOLID_BOOSTER ||
+        (COMPONENT_DEFS[b.type]?.thrust_kn ?? 0) > 0
+    );
+
+    if (blocks.length > 0 && padBlocks.length === 0) {
+      structuralIssues.push(
+        "Vehicle is not docked to the launch pad (no components touch pad at ground level)."
+      );
+    } else if (blocks.length > 0 && !hasPadEngine) {
+      structuralIssues.push(
+        "Propulsion Failure: No primary liftoff engine installed at launch pad level."
+      );
+    }
+
+    // 2. 3D Adjacency Contiguity (Docking without Air Gaps / Floating Blocks)
+    let isStructurallyConnected = false;
+    if (blocks.length > 0 && padBlocks.length > 0) {
+      const posMap = new Map<string, { x: number; y: number; z: number; type: number }>();
+      blocks.forEach((b) => posMap.set(`${b.x},${b.y},${b.z}`, b));
+
+      const queue = [...padBlocks];
+      const visited = new Set<string>(padBlocks.map((b) => `${b.x},${b.y},${b.z}`));
+
+      while (queue.length > 0) {
+        const cur = queue.shift()!;
+        const neighbors = [
+          [cur.x + 1, cur.y, cur.z],
+          [cur.x - 1, cur.y, cur.z],
+          [cur.x, cur.y + 1, cur.z],
+          [cur.x, cur.y - 1, cur.z],
+          [cur.x, cur.y, cur.z + 1],
+          [cur.x, cur.y, cur.z - 1],
+        ];
+        for (const [nx, ny, nz] of neighbors) {
+          const key = `${nx},${ny},${nz}`;
+          if (posMap.has(key) && !visited.has(key)) {
+            visited.add(key);
+            queue.push(posMap.get(key)!);
+          }
+        }
+      }
+
+      const unattachedBlocks = blocks.filter(
+        (b) => !visited.has(`${b.x},${b.y},${b.z}`)
+      );
+      if (unattachedBlocks.length > 0) {
+        isStructurallyConnected = false;
+        structuralIssues.push(
+          `Structural Discontinuity: ${unattachedBlocks.length} disconnected floating module(s) detected. All stages must be docked and physically connected without air gaps.`
+        );
+      } else {
+        isStructurallyConnected = true;
+      }
+    }
+
+    // 3. Aerodynamic Nosecone / Fairing Capping Validation
+    let hasAerodynamicNose = false;
+    if (blocks.length > 0) {
+      // Find central core stack blocks
+      const centralBlocks = blocks.filter(
+        (b) => b.x === PAD_X && b.z === PAD_Z
+      );
+      let topCentralBlock: { x: number; y: number; z: number; type: number } | null = null;
+      if (centralBlocks.length > 0) {
+        centralBlocks.sort((a, b) => b.y - a.y);
+        topCentralBlock = centralBlocks[0];
+      }
+
+      // Find overall highest block of the spacecraft
+      const overallHighestBlock = blocks.reduce(
+        (max, b) => (b.y > max.y ? b : max),
+        blocks[0]
+      );
+
+      // Must be an aerodynamic nose fairing or shroud
+      const isTopAero =
+        topCentralBlock?.type === BLOCKS.PAYLOAD_FAIRING ||
+        topCentralBlock?.type === BLOCKS.ROCKET_BODY_SHROUD ||
+        overallHighestBlock.type === BLOCKS.PAYLOAD_FAIRING ||
+        overallHighestBlock.type === BLOCKS.ROCKET_BODY_SHROUD;
+
+      if (isTopAero) {
+        hasAerodynamicNose = true;
+      } else {
+        hasAerodynamicNose = false;
+        structuralIssues.push(
+          "Aerodynamic Violation: Rocket is missing an aerodynamic nosecone fairing on top. Atmospheric Max-Q dynamic pressure will tear apart an unshielded blunt payload."
+        );
+      }
+    }
+
+    // 4. Propellant & Staging Verification
+    const hasFuelTanks = blocks.some(
+      (b) =>
+        b.type === BLOCKS.LIQUID_FUEL_TANK ||
+        b.type === BLOCKS.CRYOGENIC_TANK ||
+        b.type === BLOCKS.UPPER_STAGE_TANK
+    );
+    if (blocks.length > 0 && !hasFuelTanks) {
+      structuralIssues.push(
+        "Fuel Shortfall: No liquid propellant or cryogenic fuel tanks installed to feed engines."
+      );
+    }
+
+    if (blocks.length > 0 && !hasPayloadContainer) {
+      structuralIssues.push(
+        "Payload Missing: No satellite payload container block installed in the payload bay."
+      );
+    }
+
     const stage1Certified =
       !isOverBudget &&
       twr >= 1.2 &&
       totalThrust >= (this.activeMission.min_thrust_kn * 0.75) &&
       hasPayloadContainer &&
-      blocks.length >= 3;
+      hasPadEngine &&
+      isStructurallyConnected &&
+      hasAerodynamicNose &&
+      hasFuelTanks &&
+      structuralIssues.length === 0 &&
+      blocks.length >= 4;
 
     const stage2Certified =
       stage1Certified &&
@@ -313,6 +436,10 @@ export class SpacecraftSimulator {
       payloadCount,
       sciencePts,
       hasPayloadContainer,
+      isStructurallyConnected,
+      hasAerodynamicNose,
+      hasPadEngine,
+      structuralIssues,
       stage1Certified,
       stage2Certified,
       devStage: this.devStage,
@@ -711,6 +838,21 @@ export class SpacecraftSimulator {
 
   public startLaunchSequence() {
     if (this.isLaunching || this.isCountdown) return;
+
+    // Strict flight certification gate - prevent launch with floating modules or missing fairing
+    const telem = this.computeTelemetry();
+    if (!telem.stage1Certified || telem.structuralIssues.length > 0) {
+      const issueMsg =
+        telem.structuralIssues[0] ||
+        (telem.twr < 1.0
+          ? "TWR < 1.0: Vehicle cannot overcome gravity."
+          : telem.isOverBudget
+          ? "Budget ceiling breached!"
+          : "Vehicle failed flight readiness certification!");
+      this.callbacks.onNotification?.(`[FLIGHT ABORT] ${issueMsg}`);
+      soundEngine.playBreak();
+      return;
+    }
 
     this.isCountdown = true;
     this.isStageSeparated = false;
